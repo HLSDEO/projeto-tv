@@ -546,7 +546,7 @@ If the frontend can't reach the backend:
 #### Default Credentials Don't Work
 If login fails with username `admin` and password `admin123`:
 
-**Option 1**: Check database initialization
+**Option 1**: Check database initialization logs
 ```bash
 # View backend logs to see initialization messages
 docker-compose logs backend
@@ -554,27 +554,21 @@ docker-compose logs backend
 # Look for: "✅ Default admin user created" or "👤 Admin user already exists"
 ```
 
-**Option 2**: Manually initialize the database
+**Option 2**: Restart the backend container
 ```bash
-# Run the initialization script directly
-docker-compose exec backend python init_db.py
+# This will trigger database initialization again
+docker-compose restart backend
 
-# This will create/verify the admin user with credentials:
-# Username: admin
-# Password: admin123
+# Wait ~30 seconds and try logging in again
 ```
 
-**Option 3**: Reset admin password via API
+**Option 3**: Reset all data
 ```bash
-# Get current token (login with any valid credentials)
-curl -X POST http://localhost:8000/api/auth/login \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "username=admin&password=admin123"
+# Stop and remove containers and volumes
+docker-compose down -v
 
-# If the above doesn't work, you can reset via ArangoDB directly:
-# 1. Go to http://localhost:8529
-# 2. Navigate to Collections > users
-# 3. Edit the admin document and update the password_hash
+# Start fresh
+docker-compose up
 ```
 
 ### Creating Additional Users
