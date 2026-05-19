@@ -1,0 +1,9 @@
+{
+  "name": "projeto-tv",
+  "private": true,
+  "scripts": {
+    "dev": "npm run dev --prefix frontend",
+    "install": "npm install --prefix frontend",
+    "build": "npm run build --prefix frontend"
+  }
+}
