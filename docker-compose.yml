@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  arangodb:
+    image: arangodb:3.11
+    environment:
+      - ARANGO_ROOT_PASSWORD=rootpassword
+    ports:
+      - "8529:8529"
+    volumes:
+      - arango_data:/var/lib/arangodb3
+
+  backend:
+    build:
+      context: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      - ARANGO_URL=http://arangodb:8529
+      - ARANGO_ROOT_PASSWORD=rootpassword
+      - SECRET_KEY=minha_chave_secreta_jwt_super_segura
+    depends_on:
+      - arangodb
+    volumes:
+      - ./backend:/app
+      - upload_data:/app/uploads
+
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+
+volumes:
+  arango_data:
+  upload_data:

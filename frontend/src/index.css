@@ -1,0 +1,38 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-black text-white m-0 p-0 overflow-x-hidden;
+    font-family: 'Inter', sans-serif;
+  }
+}
+
+.ticker-wrap {
+  width: 100%;
+  overflow: hidden;
+  box-sizing: content-box;
+  white-space: nowrap;
+}
+
+.ticker {
+  display: inline-block;
+  white-space: nowrap;
+  padding-right: 100%;
+  box-sizing: content-box;
+  animation: ticker 25s linear infinite;
+}
+
+.ticker:hover {
+  animation-play-state: paused;
+}
+
+@keyframes ticker {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-100%, 0, 0);
+  }
+}
