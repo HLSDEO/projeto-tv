@@ -5,11 +5,8 @@ from fastapi.staticfiles import StaticFiles
 import os
 
 from app.database import get_db
-from app.auth import authenticate_user, create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
+from app.auth import create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES, verify_password
 from datetime import timedelta
-
-# Fix: I didn't write authenticate_user in auth.py, let's write it here or update auth.py
-from app.auth import verify_password
 
 def authenticate_user(db, username, password):
     user = next(db.collection('users').find({'username': username}), None)
