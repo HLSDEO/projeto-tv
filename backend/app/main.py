@@ -31,6 +31,14 @@ app.add_middleware(
 os.makedirs("/app/uploads", exist_ok=True)
 app.mount("/uploads", StaticFiles(directory="/app/uploads"), name="uploads")
 
+# Initialize database on startup
+@app.on_event("startup")
+async def startup_event():
+    try:
+        get_db()
+    except Exception as e:
+        print(f"Error initializing database: {e}")
+
 @app.post("/api/auth/login")
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
     db = get_db()
