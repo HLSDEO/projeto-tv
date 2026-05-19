@@ -1,15 +1,21 @@
 version: '3.8'
 
 services:
-  arangodb:
-    image: arangodb:3.11
-    command: arangod --query.memory-limit 2147483648
+  postgres:
+    image: postgres:15-alpine
     environment:
-      - ARANGO_ROOT_PASSWORD=rootpassword
+      POSTGRES_USER: tvdlog
+      POSTGRES_PASSWORD: tvdlog123
+      POSTGRES_DB: tv_dlog_db
     ports:
-      - "8529:8529"
+      - "5432:5432"
     volumes:
-      - arango_data:/var/lib/arangodb3
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tvdlog"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   backend:
     build:
@@ -17,11 +23,11 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - ARANGO_URL=http://arangodb:8529
-      - ARANGO_ROOT_PASSWORD=rootpassword
+      - DATABASE_URL=postgresql://tvdlog:tvdlog123@postgres:5432/tv_dlog_db
       - SECRET_KEY=minha_chave_secreta_jwt_super_segura
     depends_on:
-      - arangodb
+      postgres:
+        condition: service_healthy
     volumes:
       - ./backend:/app
       - upload_data:/app/uploads
@@ -40,5 +46,5 @@ services:
       - backend
 
 volumes:
-  arango_data:
+  postgres_data:
   upload_data:

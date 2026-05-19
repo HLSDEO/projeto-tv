@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
-from app.database import get_db
+from sqlalchemy.orm import Session
+from app.database import get_db, User
 from app.auth import get_current_user, get_password_hash
 import logging
 
@@ -13,15 +14,10 @@ class UserCreate(BaseModel):
 
 class UserList(BaseModel):
     username: str
-    created_at: str = None
 
 @router.get("/users")
-def list_users(username: str = Depends(get_current_user)):
+def list_users(username: str = Depends(get_current_user), db: Session = Depends(get_db)):
     """List all users (admin only)"""
-    db = get_db()
-    users_col = db.collection('users')
-
-    # Only admin can view users
     if username != 'admin':
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -29,21 +25,19 @@ def list_users(username: str = Depends(get_current_user)):
         )
 
     try:
-        users = list(users_col.all())
-        return {
-            "users": [{"username": u.get('username'), "created_at": u.get('created_at')} for u in users]
-        }
+        users = db.query(User).all()
+        return {"users": [{"username": u.username} for u in users]}
     except Exception as e:
         logger.error(f"Error listing users: {e}")
         raise HTTPException(status_code=500, detail="Error listing users")
 
 @router.post("/users")
-def create_user(user: UserCreate, username: str = Depends(get_current_user)):
+def create_user(
+    user: UserCreate,
+    username: str = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     """Create a new user (admin only)"""
-    db = get_db()
-    users_col = db.collection('users')
-
-    # Only admin can create users
     if username != 'admin':
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -51,7 +45,7 @@ def create_user(user: UserCreate, username: str = Depends(get_current_user)):
         )
 
     # Check if user already exists
-    existing_user = next(users_col.find({'username': user.username}), None)
+    existing_user = db.query(User).filter(User.username == user.username).first()
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -71,11 +65,12 @@ def create_user(user: UserCreate, username: str = Depends(get_current_user)):
         )
 
     try:
-        new_user = {
-            'username': user.username,
-            'password_hash': get_password_hash(user.password)
-        }
-        result = users_col.insert(new_user)
+        new_user = User(
+            username=user.username,
+            password_hash=get_password_hash(user.password)
+        )
+        db.add(new_user)
+        db.commit()
         logger.info(f"User '{user.username}' created by admin")
         return {
             "status": "success",
@@ -86,12 +81,13 @@ def create_user(user: UserCreate, username: str = Depends(get_current_user)):
         raise HTTPException(status_code=500, detail="Error creating user")
 
 @router.put("/users/{user_id}/password")
-def reset_password(user_id: str, new_password: str, username: str = Depends(get_current_user)):
+def reset_password(
+    user_id: str,
+    new_password: str,
+    username: str = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     """Reset user password (admin only or own password)"""
-    db = get_db()
-    users_col = db.collection('users')
-
-    # Only admin or the user themselves can reset password
     if username != 'admin' and username != user_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -105,17 +101,15 @@ def reset_password(user_id: str, new_password: str, username: str = Depends(get_
         )
 
     try:
-        user = users_col.get(user_id)
+        user = db.query(User).filter(User.username == user_id).first()
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"User '{user_id}' not found"
             )
 
-        users_col.update({
-            '_key': user_id,
-            'password_hash': get_password_hash(new_password)
-        })
+        user.password_hash = get_password_hash(new_password)
+        db.commit()
 
         logger.info(f"Password reset for user '{user_id}'")
         return {
@@ -129,19 +123,18 @@ def reset_password(user_id: str, new_password: str, username: str = Depends(get_
         raise HTTPException(status_code=500, detail="Error resetting password")
 
 @router.delete("/users/{user_id}")
-def delete_user(user_id: str, username: str = Depends(get_current_user)):
+def delete_user(
+    user_id: str,
+    username: str = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     """Delete a user (admin only, cannot delete admin)"""
-    db = get_db()
-    users_col = db.collection('users')
-
-    # Only admin can delete users
     if username != 'admin':
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only admin can delete users"
         )
 
-    # Cannot delete the admin account
     if user_id == 'admin':
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -149,14 +142,15 @@ def delete_user(user_id: str, username: str = Depends(get_current_user)):
         )
 
     try:
-        user = users_col.get(user_id)
+        user = db.query(User).filter(User.username == user_id).first()
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"User '{user_id}' not found"
             )
 
-        users_col.delete(user_id)
+        db.delete(user)
+        db.commit()
         logger.info(f"User '{user_id}' deleted by admin")
         return {
             "status": "success",

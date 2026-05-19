@@ -4,15 +4,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import os
 
-from app.database import get_db
+from app.database import get_db, init_db, User, SessionLocal
 from app.auth import create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES, verify_password
 from datetime import timedelta
+from sqlalchemy.orm import Session
 
-def authenticate_user(db, username, password):
-    user = next(db.collection('users').find({'username': username}), None)
+def authenticate_user(db: Session, username: str, password: str):
+    user = db.query(User).filter(User.username == username).first()
     if not user:
         return False
-    if not verify_password(password, user['password_hash']):
+    if not verify_password(password, user.password_hash):
         return False
     return user
 
@@ -34,26 +35,26 @@ app.mount("/uploads", StaticFiles(directory="/app/uploads"), name="uploads")
 # Initialize database on startup
 @app.on_event("startup")
 async def startup_event():
-    try:
-        get_db()
-    except Exception as e:
-        print(f"Error initializing database: {e}")
+    init_db()
 
 @app.post("/api/auth/login")
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
-    db = get_db()
-    user = authenticate_user(db, form_data.username, form_data.password)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
+    db = SessionLocal()
+    try:
+        user = authenticate_user(db, form_data.username, form_data.password)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Incorrect username or password",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token = create_access_token(
+            data={"sub": user.username}, expires_delta=access_token_expires
         )
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": user["username"]}, expires_delta=access_token_expires
-    )
-    return {"access_token": access_token, "token_type": "bearer"}
+        return {"access_token": access_token, "token_type": "bearer"}
+    finally:
+        db.close()
 
 from app.routers import media, settings, news, admin
 app.include_router(media.router)

@@ -1,80 +1,95 @@
 import os
-from arango import ArangoClient
-import time
+from sqlalchemy import create_engine, Column, String, Boolean, Integer, DateTime
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker, Session
+from datetime import datetime
 import logging
-
-ARANGO_URL = os.getenv("ARANGO_URL", "http://localhost:8529")
-ARANGO_ROOT_PASSWORD = os.getenv("ARANGO_ROOT_PASSWORD", "rootpassword")
-DB_NAME = "tv_dlog_db"
 
 logger = logging.getLogger(__name__)
 
-def get_db():
-    client = ArangoClient(hosts=ARANGO_URL)
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://tvdlog:tvdlog123@localhost:5432/tv_dlog_db")
 
-    # Retry logic for waiting ArangoDB to start
-    sys_db = None
-    for attempt in range(30):
+engine = create_engine(DATABASE_URL, echo=False)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String, unique=True, index=True, nullable=False)
+    password_hash = Column(String, nullable=False)
+
+
+class Media(Base):
+    __tablename__ = "media"
+
+    id = Column(Integer, primary_key=True, index=True)
+    filename = Column(String, nullable=False)
+    original_name = Column(String, nullable=False)
+    type = Column(String, nullable=False)  # "image" or "video"
+    duration = Column(Integer, default=10)  # seconds
+    active = Column(Boolean, default=True)
+    order = Column(Integer, nullable=False)
+    uploaded_at = Column(DateTime, default=datetime.utcnow)
+    url = Column(String, nullable=False)
+
+
+class Settings(Base):
+    __tablename__ = "settings"
+
+    id = Column(Integer, primary_key=True, index=True)
+    key = Column(String, unique=True, index=True, nullable=False)
+    value = Column(String, nullable=False)
+
+
+def init_db():
+    """Initialize database and create tables"""
+    try:
+        logger.info("✅ Connecting to PostgreSQL...")
+        Base.metadata.create_all(bind=engine)
+        logger.info("✅ Database tables created/verified")
+
+        # Create default admin user
+        db = SessionLocal()
         try:
-            sys_db = client.db('_system', username='root', password=ARANGO_ROOT_PASSWORD)
-            sys_db.ping()
-            logger.info("✅ Connected to ArangoDB")
-            break
-        except Exception as e:
-            logger.debug(f"Attempt {attempt + 1}/30: Waiting for ArangoDB... ({str(e)})")
-            time.sleep(1)
+            admin_user = db.query(User).filter(User.username == "admin").first()
+            if not admin_user:
+                from app.auth import get_password_hash
+                admin_hash = get_password_hash("admin123")
+                admin_user = User(username="admin", password_hash=admin_hash)
+                db.add(admin_user)
+                db.commit()
+                logger.info("👤 Default admin user created (username: admin, password: admin123)")
+            else:
+                logger.info("👤 Admin user already exists")
+        finally:
+            db.close()
 
-    if sys_db is None:
-        raise Exception("Could not connect to ArangoDB after 30 attempts")
+        # Create default settings
+        db = SessionLocal()
+        try:
+            news_setting = db.query(Settings).filter(Settings.key == "news_enabled").first()
+            if not news_setting:
+                news_setting = Settings(key="news_enabled", value="true")
+                db.add(news_setting)
+                db.commit()
+                logger.info("⚙️ Global settings created (news enabled by default)")
+            else:
+                logger.info("⚙️ Global settings already exist")
+        finally:
+            db.close()
 
-    # Create database if not exists
-    if not sys_db.has_database(DB_NAME):
-        sys_db.create_database(DB_NAME)
-        logger.info(f"📁 Database '{DB_NAME}' created")
-
-    db = client.db(DB_NAME, username='root', password=ARANGO_ROOT_PASSWORD)
-
-    # Initialize collections
-    collections = ['media', 'settings', 'users']
-    for col_name in collections:
-        if not db.has_collection(col_name):
-            db.create_collection(col_name)
-            logger.info(f"📋 Collection '{col_name}' created")
-
-    # Initialize default admin user
-    try:
-        users_col = db.collection('users')
-        admin_user = next(users_col.find({'username': 'admin'}), None)
-
-        if not admin_user:
-            from passlib.context import CryptContext
-            pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-            users_col.insert({
-                'username': 'admin',
-                'password_hash': pwd_context.hash('admin123')
-            })
-            logger.info("👤 Default admin user created (username: admin, password: admin123)")
-        else:
-            logger.info("👤 Admin user already exists")
     except Exception as e:
-        logger.error(f"❌ Error initializing admin user: {e}")
+        logger.error(f"❌ Error initializing database: {e}")
         raise
 
-    # Initialize default settings
+
+def get_db() -> Session:
+    """Get database session"""
+    db = SessionLocal()
     try:
-        settings_col = db.collection('settings')
-        global_settings = settings_col.get('global')
-
-        if not global_settings:
-            settings_col.insert({
-                '_key': 'global',
-                'news_enabled': True
-            })
-            logger.info("⚙️ Global settings created")
-        else:
-            logger.info("⚙️ Global settings already exist")
-    except Exception as e:
-        logger.error(f"❌ Error initializing settings: {e}")
-        raise
-
-    return db
+        yield db
+    finally:
+        db.close()
