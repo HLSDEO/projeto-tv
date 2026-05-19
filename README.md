@@ -17,7 +17,8 @@ A full-stack web application for managing and displaying media content on TV scr
 
 ### Backend
 - **FastAPI** - Modern Python web framework for building APIs
-- **ArangoDB** - NoSQL database for flexible data management
+- **PostgreSQL** - Reliable relational database for data management
+- **SQLAlchemy** - Python SQL toolkit and ORM
 - **Uvicorn** - ASGI server for running the FastAPI application
 - **JWT** - JSON Web Tokens for secure authentication
 
@@ -31,6 +32,7 @@ A full-stack web application for managing and displaying media content on TV scr
 ### Infrastructure
 - **Docker** - Containerization for consistent environments
 - **Docker Compose** - Orchestration for multi-container applications
+- **PostgreSQL 15** - High-performance relational database
 
 ## 🚀 Quick Start
 
@@ -55,13 +57,14 @@ A full-stack web application for managing and displaying media content on TV scr
    This command will:
    - Build and start the FastAPI backend (http://localhost:8000)
    - Build and start the React frontend (http://localhost:5173)
-   - Start the ArangoDB database (http://localhost:8529)
+   - Start the PostgreSQL database (port 5432)
    - Create persistent volumes for uploads and database data
+   - Automatically initialize the database and create default admin user
 
 3. **Access the application**
    - **Frontend**: http://localhost:5173
-   - **Backend API**: http://localhost:8000
-   - **ArangoDB Console**: http://localhost:8529 (username: `root`, password: `rootpassword`)
+   - **Backend API**: http://localhost:8000/docs (Swagger UI)
+   - **API**: http://localhost:8000
 
 4. **Login to the admin dashboard**
    - Username: `admin`
@@ -81,11 +84,12 @@ projeto-tv/
 │   ├── app/
 │   │   ├── main.py              # Application entry point and authentication routes
 │   │   ├── auth.py              # JWT authentication and password hashing
-│   │   ├── database.py          # ArangoDB database connection
+│   │   ├── database.py          # PostgreSQL database connection and models
 │   │   └── routers/
 │   │       ├── media.py         # Media upload and management endpoints
 │   │       ├── settings.py      # Application settings endpoints
-│   │       └── news.py          # News fetching from RSS feed
+│   │       ├── news.py          # News fetching from RSS feed
+│   │       └── admin.py         # User management endpoints
 │   ├── Dockerfile               # Docker image for backend
 │   └── requirements.txt         # Python dependencies
 │
@@ -115,10 +119,17 @@ The application uses the following environment variables (defined in `docker-com
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `ARANGO_URL` | `http://arangodb:8529` | ArangoDB connection URL |
-| `ARANGO_ROOT_PASSWORD` | `rootpassword` | ArangoDB root password |
+| `DATABASE_URL` | `postgresql://tvdlog:tvdlog123@postgres:5432/tv_dlog_db` | PostgreSQL connection URL |
 | `SECRET_KEY` | `minha_chave_secreta_jwt_super_segura` | JWT secret key for token signing |
 | `VITE_API_URL` | `http://localhost:8000` | API URL for frontend |
+
+### Database Credentials
+
+PostgreSQL database is automatically created with:
+- **User**: `tvdlog`
+- **Password**: `tvdlog123`
+- **Database**: `tv_dlog_db`
+- **Port**: `5432`
 
 ### Customizing Configuration
 
@@ -510,7 +521,7 @@ media_list = [doc for doc in cursor]
 ## 🔧 Troubleshooting
 
 ### Port Conflicts
-If ports 5173, 8000, or 8529 are already in use:
+If ports 5173, 8000, or 5432 are already in use:
 
 **Option 1**: Change ports in `docker-compose.yml`
 ```yaml
@@ -528,11 +539,11 @@ kill -9 <PID>
 ```
 
 ### Database Connection Error
-If you see "Cannot connect to ArangoDB":
+If you see "Cannot connect to PostgreSQL":
 
-1. Ensure ArangoDB is running: `docker-compose ps`
-2. Check the connection URL matches `ARANGO_URL` setting
-3. Verify the root password is correct
+1. Ensure PostgreSQL is running: `docker-compose ps`
+2. Check the connection URL matches `DATABASE_URL` setting
+3. Verify PostgreSQL is healthy: `docker-compose logs postgres`
 
 ### CORS Errors
 If the frontend can't reach the backend:
@@ -546,20 +557,20 @@ If the frontend can't reach the backend:
 #### Default Credentials Don't Work
 If login fails with username `admin` and password `admin123`:
 
-**Option 1**: Check database initialization logs
+**Option 1**: Check backend logs
 ```bash
-# View backend logs to see initialization messages
+# View backend logs
 docker-compose logs backend
 
-# Look for: "✅ Default admin user created" or "👤 Admin user already exists"
+# Look for errors during startup
 ```
 
 **Option 2**: Restart the backend container
 ```bash
-# This will trigger database initialization again
+# This will reinitialize the database
 docker-compose restart backend
 
-# Wait ~30 seconds and try logging in again
+# Wait ~10 seconds and try logging in again
 ```
 
 **Option 3**: Reset all data
@@ -600,8 +611,8 @@ To reset the entire database (including users, media, and settings):
 # Stop the containers
 docker-compose down
 
-# Remove the ArangoDB volume
-docker volume rm projeto-tv_arango_data
+# Remove the PostgreSQL volume
+docker volume rm projeto-tv_postgres_data
 
 # Remove the uploads volume (optional, to delete all uploaded media)
 docker volume rm projeto-tv_upload_data
@@ -615,7 +626,7 @@ docker-compose up
 # View logs from Docker containers
 docker-compose logs backend    # Backend logs
 docker-compose logs frontend   # Frontend logs
-docker-compose logs arangodb   # Database logs
+docker-compose logs postgres   # Database logs
 
 # Follow logs in real-time
 docker-compose logs -f backend
@@ -629,17 +640,22 @@ docker-compose logs --tail=50 backend
 2. Go to the Network tab
 3. Check API calls and responses
 
-### Check Database Collections
+### Connect to PostgreSQL
 
-Access ArangoDB web interface to check database contents:
+Access the database directly:
 
-1. Go to http://localhost:8529
-2. Login with `root` / `rootpassword`
-3. Select database `tv_dlog_db`
-4. Check collections:
-   - **users**: Contains user accounts with hashed passwords
-   - **media**: Contains all uploaded media items
-   - **settings**: Contains application settings (news_enabled)
+```bash
+# Using psql (if installed)
+psql -h localhost -U tvdlog -d tv_dlog_db -W
+
+# Or via Docker
+docker-compose exec postgres psql -U tvdlog -d tv_dlog_db
+```
+
+Database tables:
+- **users**: User accounts with hashed passwords
+- **media**: All uploaded media items
+- **settings**: Application settings
 
 ## 🎯 How It Works
 
