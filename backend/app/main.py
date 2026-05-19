@@ -50,7 +50,8 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
-from app.routers import media, settings, news
+from app.routers import media, settings, news, admin
 app.include_router(media.router)
 app.include_router(settings.router)
 app.include_router(news.router)
+app.include_router(admin.router)

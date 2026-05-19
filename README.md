@@ -276,6 +276,92 @@ GET /api/news
 }
 ```
 
+### Admin - User Management
+
+#### List All Users
+```http
+GET /api/admin/users
+Authorization: Bearer <admin-token>
+```
+
+**Response:**
+```json
+{
+  "users": [
+    {
+      "username": "admin",
+      "created_at": null
+    },
+    {
+      "username": "user1",
+      "created_at": "2026-05-19T10:30:00"
+    }
+  ]
+}
+```
+
+#### Create New User
+```http
+POST /api/admin/users
+Content-Type: application/json
+Authorization: Bearer <admin-token>
+
+{
+  "username": "newuser",
+  "password": "securepassword123"
+}
+```
+
+**Requirements:**
+- Username: at least 3 characters
+- Password: at least 6 characters
+- Only admin can create users
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "User 'newuser' created successfully"
+}
+```
+
+#### Reset User Password
+```http
+PUT /api/admin/users/{username}/password?new_password=newpassword123
+Authorization: Bearer <token>
+```
+
+**Requirements:**
+- Password: at least 6 characters
+- Admin can reset any user's password
+- Users can reset their own password
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Password for user 'username' reset successfully"
+}
+```
+
+#### Delete User
+```http
+DELETE /api/admin/users/{username}
+Authorization: Bearer <admin-token>
+```
+
+**Requirements:**
+- Only admin can delete users
+- Cannot delete the admin account
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "User 'username' deleted successfully"
+}
+```
+
 ## 👥 Usage Guide
 
 ### For Non-Technical Users
@@ -456,11 +542,79 @@ If the frontend can't reach the backend:
 3. Ensure CORS middleware is enabled in `backend/app/main.py`
 
 ### Login Issues
-If you can't login with default credentials:
 
-1. Reset admin credentials by clearing the `users` collection in ArangoDB
-2. Re-run the application to reinitialize with default credentials
-3. Check browser console for error messages
+#### Default Credentials Don't Work
+If login fails with username `admin` and password `admin123`:
+
+**Option 1**: Check database initialization
+```bash
+# View backend logs to see initialization messages
+docker-compose logs backend
+
+# Look for: "✅ Default admin user created" or "👤 Admin user already exists"
+```
+
+**Option 2**: Manually initialize the database
+```bash
+# Run the initialization script directly
+docker-compose exec backend python init_db.py
+
+# This will create/verify the admin user with credentials:
+# Username: admin
+# Password: admin123
+```
+
+**Option 3**: Reset admin password via API
+```bash
+# Get current token (login with any valid credentials)
+curl -X POST http://localhost:8000/api/auth/login \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "username=admin&password=admin123"
+
+# If the above doesn't work, you can reset via ArangoDB directly:
+# 1. Go to http://localhost:8529
+# 2. Navigate to Collections > users
+# 3. Edit the admin document and update the password_hash
+```
+
+### Creating Additional Users
+
+You can create new users via the admin API:
+
+```bash
+# First, get a token by logging in as admin
+TOKEN=$(curl -X POST http://localhost:8000/api/auth/login \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "username=admin&password=admin123" \
+  | jq -r '.access_token')
+
+# Create a new user
+curl -X POST http://localhost:8000/api/admin/users \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "newuser",
+    "password": "securepassword123"
+  }'
+```
+
+### Reset All Data
+
+To reset the entire database (including users, media, and settings):
+
+```bash
+# Stop the containers
+docker-compose down
+
+# Remove the ArangoDB volume
+docker volume rm projeto-tv_arango_data
+
+# Remove the uploads volume (optional, to delete all uploaded media)
+docker volume rm projeto-tv_upload_data
+
+# Start fresh
+docker-compose up
+```
 
 ### View Application Logs
 ```bash
@@ -471,12 +625,27 @@ docker-compose logs arangodb   # Database logs
 
 # Follow logs in real-time
 docker-compose logs -f backend
+
+# View specific number of lines
+docker-compose logs --tail=50 backend
 ```
 
 ### Viewing Network Requests
 1. Open browser DevTools (F12)
 2. Go to the Network tab
 3. Check API calls and responses
+
+### Check Database Collections
+
+Access ArangoDB web interface to check database contents:
+
+1. Go to http://localhost:8529
+2. Login with `root` / `rootpassword`
+3. Select database `tv_dlog_db`
+4. Check collections:
+   - **users**: Contains user accounts with hashed passwords
+   - **media**: Contains all uploaded media items
+   - **settings**: Contains application settings (news_enabled)
 
 ## 🎯 How It Works
 
