@@ -13,7 +13,8 @@
       "Bash(curl -s http://localhost:8000/docs)",
       "Bash(curl -s -X POST http://localhost:8000/api/auth/login -H 'Content-Type: application/x-www-form-urlencoded' -d 'username=admin&password=admin123')",
       "Bash(curl -X POST http://localhost:8000/api/auth/login -H 'Content-Type: application/x-www-form-urlencoded' -d 'username=admin&password=admin123' -v)",
-      "Bash(git commit -m 'refactor: Migrar de ArangoDB para PostgreSQL *)"
+      "Bash(git commit -m 'refactor: Migrar de ArangoDB para PostgreSQL *)",
+      "Bash(git commit -m 'chore: Remover script test_auth.sh não mais necessário *)"
     ]
   }
 }
