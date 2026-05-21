@@ -7,8 +7,8 @@ import os
 import uuid
 from datetime import datetime
 
-from app.database import get_db, Media
-from app.auth import get_current_user
+from database import get_db, Media
+from auth import get_current_user
 
 router = APIRouter(prefix="/api/media", tags=["media"])
 
