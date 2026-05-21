@@ -19,11 +19,12 @@
 }
 
 .ticker {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
   white-space: nowrap;
-  padding-right: 100%;
+  padding-left: 100%;
   box-sizing: content-box;
-  animation: ticker 25s linear infinite;
+  animation: ticker 60s linear infinite;
 }
 
 .ticker:hover {
