@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import api from '../services/api';
+import api, { getAssetUrl, getWebSocketUrl } from '../services/api';
 
 export default function TVDisplay() {
   const [media, setMedia] = useState([]);
@@ -56,16 +56,11 @@ export default function TVDisplay() {
 
   // WebSocket for manual synchronization
   useEffect(() => {
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const baseURL = api.defaults.baseURL || window.location.origin;
-    const wsHost = baseURL.replace(/^https?:\/\//, '');
-    const wsUrl = `${protocol}//${wsHost}/ws`;
-
     let ws;
     let reconnectTimeout;
 
     const connect = () => {
-      ws = new WebSocket(wsUrl);
+      ws = new WebSocket(getWebSocketUrl('/ws'));
 
       ws.onmessage = (event) => {
         try {
@@ -144,7 +139,7 @@ export default function TVDisplay() {
           >
             {m.type === 'video' ? (
               <video 
-                src={api.defaults.baseURL + m.url} 
+                src={getAssetUrl(m.url)}
                 className="w-full h-full object-cover"
                 autoPlay={idx === currentIndex}
                 muted
@@ -153,7 +148,7 @@ export default function TVDisplay() {
               />
             ) : (
               <img 
-                src={api.defaults.baseURL + m.url} 
+                src={getAssetUrl(m.url)}
                 className="w-full h-full object-cover"
                 alt=""
               />
@@ -181,7 +176,7 @@ export default function TVDisplay() {
             <div className="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/20 shadow-2xl">
               {settings.logo_url ? (
                 <img 
-                  src={api.defaults.baseURL + settings.logo_url} 
+                  src={getAssetUrl(settings.logo_url)}
                   className="max-h-16 max-w-[220px] object-contain block" 
                   alt="Logo" 
                 />

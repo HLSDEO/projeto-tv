@@ -4,11 +4,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import os
 
-from database import get_db, init_db, User, SessionLocal
-from auth import create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES, verify_password
+from app.database import get_db, init_db, User, SessionLocal
+from app.auth import create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES, verify_password
 from datetime import timedelta
 from sqlalchemy.orm import Session
-from websocket_manager import manager
+from app.websocket_manager import manager
 
 def authenticate_user(db: Session, username: str, password: str):
     user = db.query(User).filter(User.username == username).first()
@@ -69,7 +69,7 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
     finally:
         db.close()
 
-from routers import media, settings, news, admin
+from app.routers import media, settings, news, admin
 app.include_router(media.router)
 app.include_router(settings.router)
 app.include_router(news.router)

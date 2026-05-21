@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Upload, Trash2, Power, Clock, GripVertical } from 'lucide-react';
-import api from '../services/api';
+import api, { getAssetUrl } from '../services/api';
 
 export default function AdminDashboard() {
   const [media, setMedia] = useState([]);
@@ -354,7 +354,7 @@ export default function AdminDashboard() {
                   <div className="flex items-center gap-4">
                     <div className="w-16 h-16 bg-black/40 rounded flex items-center justify-center overflow-hidden border border-zinc-700">
                       <img 
-                        src={api.defaults.baseURL + settings.logo_url} 
+                        src={getAssetUrl(settings.logo_url)}
                         className="w-full h-full object-contain" 
                         alt="Logo Customizada" 
                       />
@@ -452,9 +452,9 @@ export default function AdminDashboard() {
                 
                 <div className="w-32 h-20 bg-black rounded overflow-hidden flex-shrink-0 relative">
                   {m.type === 'video' ? (
-                    <video src={api.defaults.baseURL + m.url} className="w-full h-full object-cover" />
+                    <video src={getAssetUrl(m.url)} className="w-full h-full object-cover" />
                   ) : (
-                    <img src={api.defaults.baseURL + m.url} className="w-full h-full object-cover" alt="" />
+                    <img src={getAssetUrl(m.url)} className="w-full h-full object-cover" alt="" />
                   )}
                   <span className="absolute bottom-1 right-1 bg-black/80 px-2 py-0.5 rounded text-xs font-bold uppercase">
                     {m.type}
