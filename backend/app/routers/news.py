@@ -7,7 +7,7 @@ router = APIRouter(prefix="/api/news", tags=["news"])
 
 RSS_URL = "https://g1.globo.com/rss/g1/"
 
-@router.get("/")
+@router.get("")
 async def get_news():
     try:
         async with httpx.AsyncClient() as client:

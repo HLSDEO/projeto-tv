@@ -7,7 +7,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://tvdlog:tvdlog123@localhost:5432/tv_dlog_db")
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://tvdlog:tvdlog123@postgres:5442/tv_dlog_db")
 
 engine = create_engine(DATABASE_URL, echo=False)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -56,7 +56,7 @@ def init_db():
         try:
             admin_user = db.query(User).filter(User.username == "admin").first()
             if not admin_user:
-                from auth import get_password_hash
+                from app.auth import get_password_hash
                 admin_hash = get_password_hash("admin123")
                 admin_user = User(username="admin", password_hash=admin_hash)
                 db.add(admin_user)

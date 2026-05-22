@@ -7,8 +7,8 @@ import os
 import uuid
 from datetime import datetime
 
-from database import get_db, Media
-from auth import get_current_user
+from app.database import get_db, Media
+from app.auth import get_current_user
 
 router = APIRouter(prefix="/api/media", tags=["media"])
 
@@ -31,12 +31,12 @@ class MediaResponse(BaseModel):
     class Config:
         from_attributes = True
 
-@router.get("/", response_model=List[MediaResponse])
+@router.get("", response_model=List[MediaResponse])
 def get_media(db: Session = Depends(get_db)):
     media_list = db.query(Media).order_by(Media.order.asc()).all()
     return media_list
 
-@router.post("/", response_model=MediaResponse)
+@router.post("", response_model=MediaResponse)
 async def upload_media(
     file: UploadFile = File(...),
     duration: int = Form(10),

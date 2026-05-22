@@ -6,9 +6,9 @@ import shutil
 import uuid
 import httpx
 
-from database import get_db, Settings
-from auth import get_current_user
-from websocket_manager import manager
+from app.database import get_db, Settings
+from app.auth import get_current_user
+from app.websocket_manager import manager
 
 router = APIRouter(prefix="/api/settings", tags=["settings"])
 
@@ -18,7 +18,7 @@ class SettingsUpdate(BaseModel):
     weather_city: str
     sync_interval: int
 
-@router.get("/")
+@router.get("")
 def get_settings(db: Session = Depends(get_db)):
     news_setting = db.query(Settings).filter(Settings.key == "news_enabled").first()
     logo_setting = db.query(Settings).filter(Settings.key == "logo_url").first()
@@ -34,7 +34,7 @@ def get_settings(db: Session = Depends(get_db)):
         "sync_interval": int(sync_interval_setting.value) if sync_interval_setting else 15
     }
 
-@router.put("/")
+@router.put("")
 def update_settings(
     data: SettingsUpdate,
     username: str = Depends(get_current_user),
