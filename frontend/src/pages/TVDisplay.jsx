@@ -1,5 +1,38 @@
-import { useState, useEffect } from 'react';
-import api, { getAssetUrl, getWebSocketUrl } from '../services/api';
+import { useState, useEffect, useRef } from 'react';
+import api from '../services/api';
+
+function VideoSlide({ src, isActive, duration, onEnded }) {
+  const videoRef = useRef(null);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (isActive) {
+      video.currentTime = 0;
+      const playPromise = video.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(err => {
+          console.warn("Autoplay prevented or failed:", err);
+        });
+      }
+    } else {
+      video.pause();
+    }
+  }, [isActive]);
+
+  return (
+    <video
+      ref={videoRef}
+      src={src}
+      className="w-full h-full object-cover"
+      muted
+      playsInline
+      loop={duration > 0}
+      onEnded={onEnded}
+    />
+  );
+}
 
 export default function TVDisplay() {
   const [media, setMedia] = useState([]);
@@ -101,8 +134,16 @@ export default function TVDisplay() {
     if (media.length === 0) return;
 
     const currentMedia = media[currentIndex];
-    // Video elements handle their own end event if duration is not strictly enforced, 
-    // but here we enforce the configured duration or wait for video to end?
+
+    // If it's a video set to play complete (duration === 0), we transition via the video's onEnded event.
+    // We add a safety fallback timeout of 5 minutes (300 seconds) in case of playback failure.
+    if (currentMedia?.type === 'video' && currentMedia?.duration === 0) {
+      const fallbackTimer = setTimeout(() => {
+        setCurrentIndex((prev) => (prev + 1) % media.length);
+      }, 5 * 60 * 1000);
+      return () => clearTimeout(fallbackTimer);
+    }
+
     const durationMs = (currentMedia?.duration || 10) * 1000;
 
     const timer = setTimeout(() => {
@@ -138,13 +179,15 @@ export default function TVDisplay() {
             }`}
           >
             {m.type === 'video' ? (
-              <video 
-                src={getAssetUrl(m.url)}
-                className="w-full h-full object-cover"
-                autoPlay={idx === currentIndex}
-                muted
-                loop
-                playsInline
+              <VideoSlide 
+                src={api.defaults.baseURL + m.url}
+                isActive={idx === currentIndex}
+                duration={m.duration}
+                onEnded={() => {
+                  if (m.duration === 0) {
+                    setCurrentIndex((prev) => (prev + 1) % media.length);
+                  }
+                }}
               />
             ) : (
               <img 
