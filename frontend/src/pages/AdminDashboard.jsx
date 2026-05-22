@@ -44,7 +44,11 @@ export default function AdminDashboard() {
     setUploading(true);
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('duration', 10);
+    
+    // Default duration: 0 (automatic) for videos, 10 seconds for images
+    const isVideo = file.type.startsWith('video/') || 
+                    /\.(mp4|webm|ogg)$/i.test(file.name);
+    formData.append('duration', isVideo ? 0 : 10);
 
     try {
       await api.post('/api/media', formData, {
@@ -467,17 +471,52 @@ export default function AdminDashboard() {
                 </div>
 
                 <div className="flex items-center gap-6">
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-zinc-400" />
-                    <input
-                      type="number"
-                      value={m.duration}
-                      onChange={(e) => handleUpdateMedia(m, { duration: parseInt(e.target.value) || 1 })}
-                      className="w-16 bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-center"
-                      min="1"
-                    />
-                    <span className="text-sm text-zinc-400">segundos</span>
-                  </div>
+                  {m.type === 'video' ? (
+                    <div className="flex items-center gap-4 bg-zinc-800/40 p-2 rounded-lg border border-zinc-700/50">
+                      <label className="flex items-center gap-2 cursor-pointer text-sm select-none">
+                        <input
+                          type="checkbox"
+                          checked={m.duration === 0}
+                          onChange={(e) => {
+                            const playFull = e.target.checked;
+                            handleUpdateMedia(m, { duration: playFull ? 0 : 10 });
+                          }}
+                          className="w-4 h-4 rounded border-zinc-750 bg-zinc-800 text-blue-600 focus:ring-blue-500 focus:ring-offset-zinc-900"
+                        />
+                        <span className="text-zinc-300 font-medium">Vídeo Completo</span>
+                      </label>
+                      
+                      {m.duration > 0 ? (
+                        <div className="flex items-center gap-2 border-l border-zinc-700 pl-4">
+                          <Clock className="w-4 h-4 text-zinc-400" />
+                          <input
+                            type="number"
+                            value={m.duration}
+                            onChange={(e) => handleUpdateMedia(m, { duration: Math.max(1, parseInt(e.target.value) || 1) })}
+                            className="w-16 bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-center font-semibold text-blue-400"
+                            min="1"
+                          />
+                          <span className="text-sm text-zinc-400">segundos</span>
+                        </div>
+                      ) : (
+                        <span className="text-xs font-semibold px-2 py-1 bg-blue-500/20 text-blue-400 rounded border border-blue-500/30 ml-2">
+                          Tempo Automático
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 bg-zinc-800/40 p-2 rounded-lg border border-zinc-700/50">
+                      <Clock className="w-4 h-4 text-zinc-400" />
+                      <input
+                        type="number"
+                        value={m.duration}
+                        onChange={(e) => handleUpdateMedia(m, { duration: Math.max(1, parseInt(e.target.value) || 1) })}
+                        className="w-16 bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-center font-semibold text-blue-400"
+                        min="1"
+                      />
+                      <span className="text-sm text-zinc-400">segundos</span>
+                    </div>
+                  )}
 
                   <button
                     onClick={() => handleUpdateMedia(m, { active: !m.active })}
