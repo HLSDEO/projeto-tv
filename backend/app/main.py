@@ -3,20 +3,18 @@ from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import os
-
-from database import get_db, init_db, User, SessionLocal
-from auth import create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES, verify_password
 from datetime import timedelta
-from sqlalchemy.orm import Session
-from websocket_manager import manager
+from dotenv import load_dotenv
 
-def authenticate_user(db: Session, username: str, password: str):
-    user = db.query(User).filter(User.username == username).first()
-    if not user:
-        return False
-    if not verify_password(password, user.password_hash):
-        return False
-    return user
+# Load environment variables
+load_dotenv()
+
+
+from database import init_db
+from auth import create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
+from core.websocket import manager
+from core.dependencies import get_user_service
+from services.user_service import IUserService
 
 app = FastAPI(title="TV DLOG API")
 
@@ -30,8 +28,10 @@ app.add_middleware(
 )
 
 # Serve uploaded files
-os.makedirs("/app/uploads", exist_ok=True)
-app.mount("/uploads", StaticFiles(directory="/app/uploads"), name="uploads")
+UPLOAD_DIR = os.getenv("UPLOAD_DIR", "uploads")
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
+
 
 # Initialize database on startup
 @app.on_event("startup")
@@ -51,23 +51,22 @@ async def websocket_endpoint(websocket: WebSocket):
         manager.disconnect(websocket)
 
 @app.post("/api/auth/login")
-async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
-    db = SessionLocal()
-    try:
-        user = authenticate_user(db, form_data.username, form_data.password)
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Incorrect username or password",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-        access_token = create_access_token(
-            data={"sub": user.username}, expires_delta=access_token_expires
+async def login_for_access_token(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    user_service: IUserService = Depends(get_user_service)
+):
+    user = user_service.authenticate_user(form_data.username, form_data.password)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
         )
-        return {"access_token": access_token, "token_type": "bearer"}
-    finally:
-        db.close()
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": user.username}, expires_delta=access_token_expires
+    )
+    return {"access_token": access_token, "token_type": "bearer"}
 
 from routers import media, settings, news, admin
 app.include_router(media.router)
