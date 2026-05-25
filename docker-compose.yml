@@ -4,15 +4,15 @@ services:
   postgres:
     image: postgres:15-alpine
     environment:
-      POSTGRES_USER: tvdlog
-      POSTGRES_PASSWORD: tvdlog123
-      POSTGRES_DB: tv_dlog_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U tvdlog"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -23,14 +23,16 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=postgresql://tvdlog:tvdlog123@postgres:5432/tv_dlog_db
-      - SECRET_KEY=minha_chave_secreta_jwt_super_segura
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      - SECRET_KEY=${SECRET_KEY}
+      - UPLOAD_DIR=${UPLOAD_DIR}
+      - PYTHONPATH=/app/app
     depends_on:
       postgres:
         condition: service_healthy
     volumes:
       - ./backend:/app
-      - upload_data:/app/uploads
+      - ./uploads:/app/uploads # Bind-mount to keep upload files synchronized locally in the project
 
   frontend:
     build:
@@ -38,7 +40,7 @@ services:
     ports:
       - "5173:5173"
     environment:
-      - VITE_API_URL=http://localhost:8000
+      - VITE_API_URL=${VITE_API_URL}
     volumes:
       - ./frontend:/app
       - /app/node_modules
@@ -47,4 +49,3 @@ services:
 
 volumes:
   postgres_data:
-  upload_data:
