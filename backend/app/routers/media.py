@@ -13,7 +13,7 @@ router = APIRouter(prefix="/api/media", tags=["media"])
 def get_media(media_service: IMediaService = Depends(get_media_service)):
     return media_service.get_all_media()
 
-@router.post("/", response_model=MediaResponse)
+@router.post("", response_model=MediaResponse)
 async def upload_media(
     file: UploadFile = File(...),
     duration: int = Form(10),

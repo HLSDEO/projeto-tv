@@ -35,7 +35,7 @@ def init_db():
         try:
             admin_user = db.query(User).filter(User.username == "admin").first()
             if not admin_user:
-                from auth import get_password_hash
+                from app.auth import get_password_hash
                 admin_hash = get_password_hash("admin123")
                 admin_user = User(username="admin", password_hash=admin_hash)
                 db.add(admin_user)

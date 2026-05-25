@@ -11,7 +11,7 @@ router = APIRouter(prefix="/api/settings", tags=["settings"])
 def get_settings(settings_service: ISettingsService = Depends(get_settings_service)):
     return settings_service.get_all_settings()
 
-@router.put("/")
+@router.put("")
 def update_settings(
     data: SettingsUpdate,
     username: str = Depends(get_current_user),

@@ -1,8 +1,8 @@
-version: '3.8'
-
 services:
   postgres:
     image: postgres:15-alpine
+    restart: always
+    command: ["postgres", "-p", "5442"]
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -18,10 +18,11 @@ services:
       retries: 5
 
   backend:
+    restart: always
     build:
       context: ./backend
     ports:
-      - "8000:8000"
+      - "8100:8100"
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       - SECRET_KEY=${SECRET_KEY}
@@ -35,10 +36,11 @@ services:
       - ./uploads:/app/uploads # Bind-mount to keep upload files synchronized locally in the project
 
   frontend:
+    restart: always
     build:
       context: ./frontend
     ports:
-      - "5173:5173"
+      - "3100:3100"
     environment:
       - VITE_API_URL=${VITE_API_URL}
     volumes:

@@ -68,7 +68,7 @@ async def login_for_access_token(
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
-from routers import media, settings, news, admin
+from app.routers import media, settings, news, admin
 app.include_router(media.router)
 app.include_router(settings.router)
 app.include_router(news.router)
