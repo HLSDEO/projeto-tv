@@ -1,5 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import api from '../services/api';
+import mediaService from '../services/mediaService';
+import settingsService from '../services/settingsService';
+import newsService from '../services/newsService';
 
 function VideoSlide({ src, isActive, duration, onEnded }) {
   const videoRef = useRef(null);
@@ -44,22 +47,22 @@ export default function TVDisplay() {
 
   const fetchAll = async () => {
     try {
-      const [mediaRes, settingsRes, newsRes] = await Promise.all([
-        api.get('/api/media'),
-        api.get('/api/settings'),
-        api.get('/api/news')
+      const [mediaData, settingsData, newsData] = await Promise.all([
+        mediaService.getAllMedia(),
+        settingsService.getSettings(),
+        newsService.getNews()
       ]);
       
-      const activeMedia = mediaRes.data.filter(m => m.active);
+      const activeMedia = mediaData.filter(m => m.active);
       setMedia(activeMedia);
-      setSettings(settingsRes.data);
-      setNews(newsRes.data.news);
+      setSettings(settingsData);
+      setNews(newsData.news);
 
-      if (settingsRes.data.weather_enabled) {
+      if (settingsData.weather_enabled) {
         try {
-          const weatherRes = await api.get('/api/settings/weather');
-          if (weatherRes.data.enabled) {
-            setWeather(weatherRes.data.weather);
+          const weatherData = await settingsService.getWeather();
+          if (weatherData.enabled) {
+            setWeather(weatherData.weather);
           } else {
             setWeather('');
           }
@@ -168,8 +171,6 @@ export default function TVDisplay() {
       </div>
     );
   }
-
-  const currentItem = media[currentIndex];
 
   return (
     <div className="w-screen h-screen bg-black overflow-hidden relative">

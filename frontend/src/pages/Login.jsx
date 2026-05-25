@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../services/api';
+import authService from '../services/authService';
 
 export default function Login() {
   const [username, setUsername] = useState('');
@@ -11,15 +11,7 @@ export default function Login() {
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      const formData = new URLSearchParams();
-      formData.append('username', username);
-      formData.append('password', password);
-      
-      const response = await api.post('/api/auth/login', formData, {
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-      });
-      
-      localStorage.setItem('token', response.data.access_token);
+      await authService.login(username, password);
       navigate('/admin');
     } catch (err) {
       setError('Credenciais inválidas');
