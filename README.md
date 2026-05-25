@@ -34,6 +34,93 @@ A full-stack web application for managing and displaying media content on TV scr
 - **Docker Compose** - Orchestration for multi-container applications
 - **PostgreSQL 15** - High-performance relational database
 
+## 📐 Architecture & Database Models
+
+The system is designed with a modern, decoupled **Controller-Service-Repository (CSR)** architecture for high maintainability, testability, and clean separation of concerns.
+
+### 1. Software Architecture (CSR Model)
+
+In the diagram below, each layer communicates only with the layers directly beneath it. Dependecy Inversion is fully implemented through Python Abstract Base Classes (`abc.ABC`), allowing database and third-party integrations to be easily mocked for unit tests.
+
+```mermaid
+graph TD
+    subgraph Client Layer
+        UI["📺 React Admin / TV Display"]
+    end
+
+    subgraph API Presentation Layer
+        Router["routers/*.py (Controllers)"]
+        Main["main.py (FastAPI App)"]
+    end
+
+    subgraph Business Logic Layer (Services)
+        US["UserService"]
+        MS["MediaService"]
+        SS["SettingsService"]
+        EXS["ExternalService"]
+    end
+
+    subgraph Data Access Layer (Repositories)
+        UR["UserRepository"]
+        MR["MediaRepository"]
+        SR["SettingsRepository"]
+    end
+
+    subgraph Infrastructure / Storage Layer
+        DB[("🐘 PostgreSQL DB")]
+        FS[("💾 Local File Storage")]
+        ExtAPI["🌐 External APIs: G1 RSS / wttr.in"]
+    end
+
+    UI -->|HTTP / WebSockets| Main
+    Main --> Router
+    Router -->|Injected Dependency| US
+    Router -->|Injected Dependency| MS
+    Router -->|Injected Dependency| SS
+    Router -->|Injected Dependency| EXS
+
+    US -->|Contracts| UR
+    MS -->|Contracts| MR
+    SS -->|Contracts| SR
+    EXS -->|HTTP Client| ExtAPI
+
+    UR -->|SQLAlchemy| DB
+    MR -->|SQLAlchemy| DB
+    SR -->|SQLAlchemy| DB
+
+    MS -->|File I/O| FS
+    SS -->|File I/O| FS
+```
+
+### 2. Database Model (ERD)
+
+The project leverages a robust relational **PostgreSQL** schema to store users, media playlists, and system-wide configuration keys.
+
+```mermaid
+erDiagram
+    users {
+        int id PK "Serial, Primary Key"
+        string username UK "Varchar(50), Unique, Index"
+        string password_hash "Varchar(255)"
+    }
+    media {
+        int id PK "Serial, Primary Key"
+        string filename "Varchar(255)"
+        string original_name "Varchar(255)"
+        string type "Varchar(20) - 'image' or 'video'"
+        int duration "Integer - default 10 seconds"
+        boolean active "Boolean - default True"
+        int order "Integer - playlist rank"
+        datetime uploaded_at "Timestamp - default UTC"
+        string url "Varchar(550)"
+    }
+    settings {
+        int id PK "Serial, Primary Key"
+        string key UK "Varchar(100), Unique, Index"
+        string value "Text"
+    }
+```
+
 ## 🚀 Quick Start
 
 ### Prerequisites
@@ -78,18 +165,39 @@ A full-stack web application for managing and displaying media content on TV scr
 
 ## 📁 Project Structure
 
-```
+```text
 projeto-tv/
 ├── backend/                      # FastAPI backend application
 │   ├── app/
-│   │   ├── main.py              # Application entry point and authentication routes
+│   │   ├── main.py              # Application entry point and configuration
 │   │   ├── auth.py              # JWT authentication and password hashing
-│   │   ├── database.py          # PostgreSQL database connection and models
-│   │   └── routers/
-│   │       ├── media.py         # Media upload and management endpoints
-│   │       ├── settings.py      # Application settings endpoints
-│   │       ├── news.py          # News fetching from RSS feed
-│   │       └── admin.py         # User management endpoints
+│   │   ├── database.py          # PostgreSQL session setup & DB init logic
+│   │   ├── models/              # SQLAlchemy Database Models
+│   │   │   ├── user.py
+│   │   │   ├── media.py
+│   │   │   └── settings.py
+│   │   ├── schemas/             # Pydantic validation schemas (DTOs)
+│   │   │   ├── user.py
+│   │   │   ├── media.py
+│   │   │   └── settings.py
+│   │   ├── repositories/        # Data Access Layer (Concrete & Contracts)
+│   │   │   ├── base.py
+│   │   │   ├── user_repository.py
+│   │   │   ├── media_repository.py
+│   │   │   └── settings_repository.py
+│   │   ├── services/            # Business Logic Layer (Concrete & Contracts)
+│   │   │   ├── user_service.py
+│   │   │   ├── media_service.py
+│   │   │   ├── settings_service.py
+│   │   │   └── external_service.py
+│   │   ├── core/                # Global utilities and dependencies injection
+│   │   │   ├── dependencies.py
+│   │   │   └── websocket.py
+│   │   └── routers/             # API Controllers (FastAPI Routes)
+│   │       ├── admin.py
+│   │       ├── media.py
+│   │       ├── news.py
+│   │       └── settings.py
 │   ├── Dockerfile               # Docker image for backend
 │   └── requirements.txt         # Python dependencies
 │
@@ -110,6 +218,7 @@ projeto-tv/
 ├── uploads/                     # Persistent storage for uploaded media (created at runtime)
 └── README.md                    # This file
 ```
+
 
 ## ⚙️ Configuration
 
@@ -427,8 +536,7 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 
 # Set environment variables
-export ARANGO_URL=http://localhost:8529
-export ARANGO_ROOT_PASSWORD=rootpassword
+export DATABASE_URL=postgresql://tvdlog:tvdlog123@localhost:5432/tv_dlog_db
 export SECRET_KEY=your-secret-key
 
 # Run the server
@@ -452,12 +560,15 @@ npm run dev
 
 **Database Setup:**
 ```bash
-# Install and run ArangoDB locally, or use Docker:
-docker run -d --name arangodb \
-  -e ARANGO_ROOT_PASSWORD=rootpassword \
-  -p 8529:8529 \
-  arangodb:3.11
+# Install and run PostgreSQL locally, or use Docker:
+docker run -d --name postgres-db \
+  -e POSTGRES_USER=tvdlog \
+  -e POSTGRES_PASSWORD=tvdlog123 \
+  -e POSTGRES_DB=tv_dlog_db \
+  -p 5432:5432 \
+  postgres:15
 ```
+
 
 #### Modifying the TV Carousel Component
 
@@ -508,15 +619,17 @@ The application uses Tailwind CSS. Customize styles by:
 
 #### Database Queries
 
-Query the database using AQL (ArangoDB Query Language):
+Querying database using repositories in the new CSR architecture:
 
 ```python
-from app.database import get_db
+from app.core.dependencies import get_media_service
 
-db = get_db()
-cursor = db.aql.execute('FOR m IN media SORT m.order ASC RETURN m')
-media_list = [doc for doc in cursor]
+# Resolving dependencies using FastAPI / direct injection
+# The media service fetches the media list sorted by 'order' ascending using IMediaRepository
+media_service = get_media_service(db)
+media_list = media_service.get_all_media()
 ```
+
 
 ## 🔧 Troubleshooting
 
@@ -659,7 +772,7 @@ Database tables:
 
 ## 🎯 How It Works
 
-1. **User uploads media** → File is saved to `/uploads` directory and metadata stored in ArangoDB
+1. **User uploads media** → File is saved to `/uploads` directory and metadata stored in PostgreSQL
 2. **Admin sets duration** → Each media item has a configurable display time
 3. **User reorders media** → Display order is updated in the database
 4. **TV Display fetches media** → Requests all active media from the backend
