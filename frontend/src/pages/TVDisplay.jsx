@@ -1,5 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import api from '../services/api';
+import api, { getWebSocketUrl, getAssetUrl } from '../services/api';
+import mediaService from '../services/mediaService';
+import settingsService from '../services/settingsService';
+import newsService from '../services/newsService';
 
 function VideoSlide({ src, isActive, duration, onEnded }) {
   const videoRef = useRef(null);
@@ -44,22 +47,22 @@ export default function TVDisplay() {
 
   const fetchAll = async () => {
     try {
-      const [mediaRes, settingsRes, newsRes] = await Promise.all([
-        api.get('/api/media'),
-        api.get('/api/settings'),
-        api.get('/api/news')
+      const [mediaData, settingsData, newsData] = await Promise.all([
+        mediaService.getAllMedia(),
+        settingsService.getSettings(),
+        newsService.getNews()
       ]);
       
-      const activeMedia = mediaRes.data.filter(m => m.active);
+      const activeMedia = mediaData.filter(m => m.active);
       setMedia(activeMedia);
-      setSettings(settingsRes.data);
-      setNews(newsRes.data.news);
+      setSettings(settingsData);
+      setNews(newsData.news);
 
-      if (settingsRes.data.weather_enabled) {
+      if (settingsData.weather_enabled) {
         try {
-          const weatherRes = await api.get('/api/settings/weather');
-          if (weatherRes.data.enabled) {
-            setWeather(weatherRes.data.weather);
+          const weatherData = await settingsService.getWeather();
+          if (weatherData.enabled) {
+            setWeather(weatherData.weather);
           } else {
             setWeather('');
           }
@@ -164,8 +167,6 @@ export default function TVDisplay() {
     );
   }
 
-  const currentItem = media[currentIndex];
-
   return (
     <div className="w-screen h-screen bg-black overflow-hidden relative">
       
@@ -180,7 +181,7 @@ export default function TVDisplay() {
           >
             {m.type === 'video' ? (
               <VideoSlide 
-                src={api.defaults.baseURL + m.url}
+                src={getAssetUrl(m.url)}
                 isActive={idx === currentIndex}
                 duration={m.duration}
                 onEnded={() => {
@@ -190,11 +191,20 @@ export default function TVDisplay() {
                 }}
               />
             ) : (
-              <img 
-                src={getAssetUrl(m.url)}
-                className="w-full h-full object-cover"
-                alt=""
-              />
+              <div className="w-full h-full relative overflow-hidden flex items-center justify-center">
+                {/* Blurred ambient background image */}
+                <img 
+                  src={getAssetUrl(m.url)}
+                  className="absolute inset-0 w-full h-full object-cover blur-3xl scale-110 opacity-40 select-none pointer-events-none"
+                  alt=""
+                />
+                {/* Clean, fully-visible foreground image */}
+                <img 
+                  src={getAssetUrl(m.url)}
+                  className="relative z-10 w-full h-full object-contain"
+                  alt={m.original_name}
+                />
+              </div>
             )}
           </div>
         ))}

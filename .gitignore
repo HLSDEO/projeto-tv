@@ -28,3 +28,8 @@ dist-ssr
 *.sln
 *.sw?
 *.pyc
+
+# Local uploads
+uploads/
+backend/uploads/
+

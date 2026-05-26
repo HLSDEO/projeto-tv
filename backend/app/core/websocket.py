@@ -25,7 +25,6 @@ class ConnectionManager:
                 await connection.send_json(message)
             except Exception as e:
                 logger.error(f"❌ Failed to send message to websocket connection: {e}")
-                # We do not remove here to prevent modifying list during iteration,
-                # disconnection will be handled by the websocket loop context manager.
+                # Will be disconnected by the websocket loop context manager.
 
 manager = ConnectionManager()
