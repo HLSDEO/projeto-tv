@@ -9,7 +9,7 @@ from core.dependencies import get_media_service
 
 router = APIRouter(prefix="/api/media", tags=["media"])
 
-@router.get("/", response_model=List[MediaResponse])
+@router.get("", response_model=List[MediaResponse])
 def get_media(media_service: IMediaService = Depends(get_media_service)):
     return media_service.get_all_media()
 

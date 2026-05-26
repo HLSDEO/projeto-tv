@@ -21,7 +21,14 @@ app = FastAPI(title="TV DLOG API")
 # Configure CORS for frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:3100",
+        "http://127.0.0.1:3100",
+        "http://localhost:8000",
+        "http://127.0.0.1:8000",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -68,7 +75,7 @@ async def login_for_access_token(
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
-from app.routers import media, settings, news, admin
+from routers import media, settings, news, admin
 app.include_router(media.router)
 app.include_router(settings.router)
 app.include_router(news.router)

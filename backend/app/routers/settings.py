@@ -7,7 +7,7 @@ from core.dependencies import get_settings_service, get_external_service
 
 router = APIRouter(prefix="/api/settings", tags=["settings"])
 
-@router.get("/")
+@router.get("")
 def get_settings(settings_service: ISettingsService = Depends(get_settings_service)):
     return settings_service.get_all_settings()
 
