@@ -1,7 +1,7 @@
 import { GripVertical, Clock, Power, Trash2 } from 'lucide-react';
 import { getAssetUrl } from '../services/api';
 
-export default function MediaItem({ m, onUpdate, onDelete, baseURL }) {
+export default function MediaItem({ m, onUpdate, onDelete }) {
   const handleDurationChange = (e) => {
     const val = Math.max(1, parseInt(e.target.value) || 1);
     onUpdate(m, { duration: val });

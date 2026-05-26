@@ -13,8 +13,7 @@ export default function SettingsPanel({
   onCitySave,
   intervalInput,
   setIntervalInput,
-  onIntervalSave,
-  baseURL
+  onIntervalSave
 }) {
   const logoInputRef = useRef(null);
 

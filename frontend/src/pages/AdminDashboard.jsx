@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import authService from '../services/authService';
@@ -21,11 +21,7 @@ export default function AdminDashboard() {
   const [syncing, setSyncing] = useState(false);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       const [mediaData, settingsData] = await Promise.all([
         mediaService.getAllMedia(),
@@ -35,13 +31,23 @@ export default function AdminDashboard() {
       setSettings(settingsData);
       setCityInput(settingsData.weather_city || 'Brasília');
       setIntervalInput(String(settingsData.sync_interval || 15));
+      if (settingsData.sync_interval) {
+        setTimeLeft(settingsData.sync_interval * 60);
+      }
     } catch (err) {
       if (err.response?.status === 401) {
         authService.logout();
         navigate('/login');
       }
     }
-  };
+  }, [navigate]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchData();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [fetchData]);
 
   const handleUpload = async (file) => {
     setUploading(true);
@@ -77,26 +83,7 @@ export default function AdminDashboard() {
     }
   };
 
-  // Sync Timer Countdown
-  useEffect(() => {
-    if (!settings.sync_interval) return;
-    setTimeLeft(settings.sync_interval * 60);
-  }, [settings.sync_interval]);
-
-  useEffect(() => {
-    if (timeLeft <= 0) {
-      if (timeLeft === 0 && settings.sync_interval) {
-        handleSyncTV(true); // Silent sync on timer zero
-      }
-      return;
-    }
-    const timer = setInterval(() => {
-      setTimeLeft(prev => prev - 1);
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [timeLeft, settings.sync_interval]);
-
-  const handleSyncTV = async (silent = false) => {
+  const handleSyncTV = useCallback(async (silent = false) => {
     if (!silent) setSyncing(true);
     try {
       await settingsService.triggerSync();
@@ -114,7 +101,23 @@ export default function AdminDashboard() {
     } finally {
       if (!silent) setSyncing(false);
     }
-  };
+  }, [settings.sync_interval]);
+
+  // Sync Timer Countdown
+  useEffect(() => {
+    if (timeLeft <= 0) {
+      if (timeLeft === 0 && settings.sync_interval) {
+        setTimeout(() => {
+          handleSyncTV(true); // Silent sync on timer zero
+        }, 0);
+      }
+      return;
+    }
+    const timer = setInterval(() => {
+      setTimeLeft(prev => prev - 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [timeLeft, settings.sync_interval, handleSyncTV]);
 
   const handleUpdateSettings = async (updatedSettings) => {
     try {
