@@ -1,4 +1,5 @@
 import { GripVertical, Clock, Power, Trash2 } from 'lucide-react';
+import { getAssetUrl } from '../services/api';
 
 export default function MediaItem({ m, onUpdate, onDelete, baseURL }) {
   const handleDurationChange = (e) => {
@@ -21,9 +22,9 @@ export default function MediaItem({ m, onUpdate, onDelete, baseURL }) {
       
       <div className="w-32 h-20 bg-black rounded overflow-hidden flex-shrink-0 relative">
         {m.type === 'video' ? (
-          <video src={baseURL + m.url} className="w-full h-full object-cover" />
+          <video src={getAssetUrl(m.url)} className="w-full h-full object-cover" />
         ) : (
-          <img src={baseURL + m.url} className="w-full h-full object-cover" alt="" />
+          <img src={getAssetUrl(m.url)} className="w-full h-full object-cover" alt="" />
         )}
         <span className="absolute bottom-1 right-1 bg-black/80 px-2 py-0.5 rounded text-xs font-bold uppercase">
           {m.type}

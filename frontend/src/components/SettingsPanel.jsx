@@ -1,5 +1,6 @@
 import { Upload, Trash2 } from 'lucide-react';
 import { useRef } from 'react';
+import { getAssetUrl } from '../services/api';
 
 export default function SettingsPanel({
   settings,
@@ -51,7 +52,7 @@ export default function SettingsPanel({
       <div className="flex items-center justify-between p-4 bg-zinc-900 rounded-lg">
         <div>
           <p className="font-medium">Notícias (Ticker)</p>
-          <p className="text-sm text-zinc-400">Exibir barra rolando com notícias do G1 na TV</p>
+          <p className="text-sm text-zinc-400">Exibir barra rolando com notícias na TV</p>
         </div>
         <button
           onClick={toggleNews}
@@ -72,7 +73,7 @@ export default function SettingsPanel({
         <div className="flex items-center justify-between">
           <div>
             <p className="font-medium">Previsão do Tempo</p>
-            <p className="text-sm text-zinc-400">Exibir clima dinâmico da wttr.in ao lado das notícias</p>
+            <p className="text-sm text-zinc-400">Exibir clima dinâmico ao lado das notícias</p>
           </div>
           <button
             onClick={toggleWeather}
@@ -114,7 +115,7 @@ export default function SettingsPanel({
       <div className="p-4 bg-zinc-900 rounded-lg space-y-4">
         <div>
           <p className="font-medium">Logotipo da TV</p>
-          <p className="text-sm text-zinc-400">Substitua o logotipo de texto "TV DLOG" por uma imagem personalizada no canto inferior esquerdo</p>
+          <p className="text-sm text-zinc-400">Substitua o logotipo por uma imagem personalizada no canto inferior esquerdo</p>
         </div>
         
         {settings.logo_url ? (
@@ -122,7 +123,7 @@ export default function SettingsPanel({
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 bg-black/40 rounded flex items-center justify-center overflow-hidden border border-zinc-700">
                 <img 
-                  src={baseURL + settings.logo_url} 
+                  src={getAssetUrl(settings.logo_url)} 
                   className="w-full h-full object-contain" 
                   alt="Logo Customizada" 
                 />

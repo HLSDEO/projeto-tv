@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import api from '../services/api';
+import api, { getWebSocketUrl, getAssetUrl } from '../services/api';
 import mediaService from '../services/mediaService';
 import settingsService from '../services/settingsService';
 import newsService from '../services/newsService';
@@ -181,7 +181,7 @@ export default function TVDisplay() {
           >
             {m.type === 'video' ? (
               <VideoSlide 
-                src={api.defaults.baseURL + m.url}
+                src={getAssetUrl(m.url)}
                 isActive={idx === currentIndex}
                 duration={m.duration}
                 onEnded={() => {
@@ -191,11 +191,20 @@ export default function TVDisplay() {
                 }}
               />
             ) : (
-              <img 
-                src={getAssetUrl(m.url)}
-                className="w-full h-full object-cover"
-                alt=""
-              />
+              <div className="w-full h-full relative overflow-hidden flex items-center justify-center">
+                {/* Blurred ambient background image */}
+                <img 
+                  src={getAssetUrl(m.url)}
+                  className="absolute inset-0 w-full h-full object-cover blur-3xl scale-110 opacity-40 select-none pointer-events-none"
+                  alt=""
+                />
+                {/* Clean, fully-visible foreground image */}
+                <img 
+                  src={getAssetUrl(m.url)}
+                  className="relative z-10 w-full h-full object-contain"
+                  alt={m.original_name}
+                />
+              </div>
             )}
           </div>
         ))}
