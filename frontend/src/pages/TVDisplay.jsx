@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import api, { getWebSocketUrl, getAssetUrl } from '../services/api';
+import { getWebSocketUrl, getAssetUrl } from '../services/api';
 import mediaService from '../services/mediaService';
 import settingsService from '../services/settingsService';
 import newsService from '../services/newsService';
@@ -80,7 +80,11 @@ export default function TVDisplay() {
 
   // Fetch initial data
   useEffect(() => {
-    fetchAll();
+    // Defer initial fetch to next tick to avoid synchronous cascading renders during mount
+    const timer = setTimeout(() => {
+      fetchAll();
+    }, 0);
+    return () => clearTimeout(timer);
   }, []);
 
   // Polling with dynamic interval based on sync_interval setting
@@ -113,7 +117,7 @@ export default function TVDisplay() {
         reconnectTimeout = setTimeout(connect, 5000);
       };
 
-      ws.onerror = (err) => {
+      ws.onerror = () => {
         ws.close();
       };
     };

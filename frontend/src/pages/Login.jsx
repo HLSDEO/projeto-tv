@@ -13,7 +13,7 @@ export default function Login() {
     try {
       await authService.login(username, password);
       navigate('/admin');
-    } catch (err) {
+    } catch {
       setError('Credenciais inválidas');
     }
   };
