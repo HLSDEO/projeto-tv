@@ -1,7 +1,6 @@
 .venv/
 __pycache__/
 *.pyc
-.env
 
 # Logs
 logs
@@ -33,3 +32,4 @@ dist-ssr
 uploads/
 backend/uploads/
 
+GEMINI.md
