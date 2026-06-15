@@ -19,11 +19,12 @@ export const mediaService = {
     return response.data;
   },
 
-  updateMedia: async (id, duration, active, order) => {
+  updateMedia: async (id, duration, active, order, scheduledStart = null) => {
     const response = await api.put(`/api/media/${id}`, {
       duration,
       active,
       order,
+      scheduled_start: scheduledStart,
     });
     return response.data;
   },

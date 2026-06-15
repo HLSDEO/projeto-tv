@@ -28,6 +28,15 @@ def init_db():
         Base.metadata.create_all(bind=engine)
         logger.info("✅ Database tables created/verified")
 
+        # Lightweight migrations for columns added after the initial release.
+        # create_all() does not alter existing tables, so new columns are added idempotently here.
+        from sqlalchemy import text
+        with engine.begin() as conn:
+            conn.execute(text(
+                "ALTER TABLE media ADD COLUMN IF NOT EXISTS scheduled_start TIMESTAMP"
+            ))
+        logger.info("✅ Database migrations applied")
+
 
         # Create default admin user
         db = SessionLocal()

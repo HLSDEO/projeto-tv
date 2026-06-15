@@ -13,4 +13,5 @@ class Media(Base):
     active = Column(Boolean, default=True)
     order = Column(Integer, nullable=False)
     uploaded_at = Column(DateTime, default=datetime.utcnow)
+    scheduled_start = Column(DateTime, nullable=True)  # If set, media is only displayed from this date/time onward
     url = Column(String, nullable=False)

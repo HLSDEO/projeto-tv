@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional
+from datetime import datetime
 import os
 import shutil
 import uuid
@@ -17,7 +18,7 @@ class IMediaService(ABC):
         pass
 
     @abstractmethod
-    def update_media(self, media_id: int, duration: int, active: bool, order: int) -> Media:
+    def update_media(self, media_id: int, duration: int, active: bool, order: int, scheduled_start: Optional[datetime] = None) -> Media:
         pass
 
     @abstractmethod
@@ -61,7 +62,7 @@ class MediaService(IMediaService):
 
         return self.media_repo.create(media)
 
-    def update_media(self, media_id: int, duration: int, active: bool, order: int) -> Media:
+    def update_media(self, media_id: int, duration: int, active: bool, order: int, scheduled_start: Optional[datetime] = None) -> Media:
         media = self.media_repo.get_by_id(media_id)
         if not media:
             raise KeyError(f"Media with ID {media_id} not found")
@@ -69,6 +70,7 @@ class MediaService(IMediaService):
         media.duration = duration
         media.active = active
         media.order = order
+        media.scheduled_start = scheduled_start
 
         self.media_repo.commit()
         self.media_repo.refresh(media)
