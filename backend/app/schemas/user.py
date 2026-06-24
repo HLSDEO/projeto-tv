@@ -6,3 +6,6 @@ class UserCreate(BaseModel):
 
 class UserList(BaseModel):
     username: str
+
+class PasswordReset(BaseModel):
+    new_password: str
