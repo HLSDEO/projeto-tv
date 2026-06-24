@@ -14,14 +14,9 @@ class Media(Base, AuditMixin):
     active = Column(Boolean, default=True, index=True)
     order = Column(Integer, nullable=False)
     uploaded_at = Column(DateTime, default=datetime.utcnow)
-<<<<<<< HEAD
     url = Column(String(500), nullable=False)
 
     __table_args__ = (
         Index("ix_media_active_order", "active", "order"),
     )
 
-=======
-    scheduled_start = Column(DateTime, nullable=True)  # If set, media is only displayed from this date/time onward
-    url = Column(String, nullable=False)
->>>>>>> 5f706791e8ec615419b552a5084fec8f261c6452

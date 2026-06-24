@@ -12,7 +12,9 @@ export const adminService = {
   },
 
   resetPassword: async (username, newPassword) => {
-    const response = await api.put(`/api/admin/users/${username}/password?new_password=${encodeURIComponent(newPassword)}`);
+    const response = await api.put(`/api/admin/users/${username}/password`, {
+      new_password: newPassword
+    });
     return response.data;
   },
 

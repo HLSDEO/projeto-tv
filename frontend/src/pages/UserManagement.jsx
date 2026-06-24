@@ -5,6 +5,16 @@ import authService from '../services/authService';
 import Header from '../components/Header';
 import { UserPlus, Trash2, KeyRound, AlertTriangle } from 'lucide-react';
 
+const getErrorMessage = (err, defaultMsg) => {
+  const detail = err.response?.data?.detail;
+  if (!detail) return defaultMsg;
+  if (typeof detail === 'string') return detail;
+  if (Array.isArray(detail)) {
+    return detail.map(d => d.msg).join(', ');
+  }
+  return defaultMsg;
+};
+
 export default function UserManagement() {
   const [users, setUsers] = useState([]);
   const [usernameInput, setUsernameInput] = useState('');
@@ -13,6 +23,7 @@ export default function UserManagement() {
   const [newPasswordInput, setNewPasswordInput] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [modalError, setModalError] = useState('');
   const navigate = useNavigate();
 
   const fetchUsers = useCallback(async () => {
@@ -55,7 +66,7 @@ export default function UserManagement() {
       setPasswordInput('');
       fetchUsers();
     } catch (err) {
-      setError(err.response?.data?.detail || 'Erro ao criar usuário.');
+      setError(getErrorMessage(err, 'Erro ao criar usuário.'));
     }
   };
 
@@ -77,7 +88,7 @@ export default function UserManagement() {
       setSuccess(`Usuário '${usernameToDelete}' excluído com sucesso.`);
       fetchUsers();
     } catch (err) {
-      setError(err.response?.data?.detail || 'Erro ao excluir usuário.');
+      setError(getErrorMessage(err, 'Erro ao excluir usuário.'));
     }
   };
 
@@ -85,9 +96,10 @@ export default function UserManagement() {
     e.preventDefault();
     setError('');
     setSuccess('');
+    setModalError('');
 
     if (!newPasswordInput || newPasswordInput.length < 6) {
-      setError('A nova senha deve ter pelo menos 6 caracteres.');
+      setModalError('A nova senha deve ter pelo menos 6 caracteres.');
       return;
     }
 
@@ -97,7 +109,7 @@ export default function UserManagement() {
       setResettingUser(null);
       setNewPasswordInput('');
     } catch (err) {
-      setError(err.response?.data?.detail || 'Erro ao redefinir senha.');
+      setModalError(getErrorMessage(err, 'Erro ao redefinir senha.'));
     }
   };
 
@@ -193,7 +205,10 @@ export default function UserManagement() {
                       </td>
                       <td className="px-6 py-4 text-right flex justify-end gap-3">
                         <button
-                          onClick={() => setResettingUser(u.username)}
+                          onClick={() => {
+                            setResettingUser(u.username);
+                            setModalError('');
+                          }}
                           className="p-1.5 bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 border border-blue-500/10 hover:border-blue-500/30 rounded transition flex items-center gap-1 text-xs font-medium"
                           title="Alterar Senha"
                         >
@@ -238,6 +253,12 @@ export default function UserManagement() {
               </p>
             </div>
 
+            {modalError && (
+              <div className="p-3 bg-red-600/10 border border-red-500/20 text-red-400 rounded-lg text-sm">
+                {modalError}
+              </div>
+            )}
+
             <form onSubmit={handleResetPassword} className="space-y-4">
               <div>
                 <label className="block text-sm font-semibold text-zinc-400 mb-1">Nova Senha</label>
@@ -258,6 +279,7 @@ export default function UserManagement() {
                   onClick={() => {
                     setResettingUser(null);
                     setNewPasswordInput('');
+                    setModalError('');
                   }}
                   className="px-4 py-2 bg-zinc-700 hover:bg-zinc-650 rounded-lg text-sm font-semibold transition"
                 >
