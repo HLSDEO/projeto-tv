@@ -22,7 +22,11 @@ def update_settings(
             news_enabled=data.news_enabled,
             weather_enabled=data.weather_enabled,
             weather_city=data.weather_city,
-            sync_interval=data.sync_interval
+            sync_interval=data.sync_interval,
+            logo_blur_enabled=data.logo_blur_enabled,
+            logo_position=data.logo_position,
+            clock_position=data.clock_position,
+            news_position=data.news_position
         )
         return {"status": "success"}
     except Exception as e:

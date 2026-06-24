@@ -39,7 +39,12 @@ function VideoSlide({ src, isActive, duration, onEnded }) {
 
 export default function TVDisplay() {
   const [media, setMedia] = useState([]);
-  const [settings, setSettings] = useState({ news_enabled: false });
+  const [settings, setSettings] = useState({ 
+    news_enabled: false,
+    logo_position: 'top-left',
+    clock_position: 'top-right',
+    news_position: 'bottom'
+  });
   const [news, setNews] = useState([]);
   const [weather, setWeather] = useState('');
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -163,6 +168,110 @@ export default function TVDisplay() {
   const totalNewsLength = (news || []).reduce((acc, curr) => acc + (curr?.length || 0), 0);
   const tickerDuration = Math.max(45, Math.round(totalNewsLength * 0.25));
 
+  const isNewsBarVisible = (settings.news_enabled && news.length > 0) || (settings.weather_enabled && weather);
+  const newsPos = settings.news_position || 'bottom';
+
+  const renderLogo = () => {
+    return (
+      <div className={
+        settings.logo_blur_enabled 
+          ? "bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/20 shadow-2xl transition-all duration-500" 
+          : "p-0 transition-all duration-500"
+      }>
+        {settings.logo_url ? (
+          <img 
+            src={getAssetUrl(settings.logo_url)}
+            className="max-h-16 max-w-[220px] object-contain block" 
+            alt="Logo" 
+          />
+        ) : (
+          <div className="text-white text-3xl font-black tracking-tighter flex items-center gap-2 select-none">
+            <span className="bg-blue-600 text-white px-2 py-1 rounded">TV</span>
+            <span>DLOG</span>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderClock = () => {
+    return (
+      <div className="bg-black/40 backdrop-blur-md px-6 py-3 rounded-2xl border border-white/10 shadow-2xl transition-all duration-500">
+        <span className="text-white text-5xl font-bold tracking-wider drop-shadow-lg">
+          {time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+        </span>
+      </div>
+    );
+  };
+
+  const renderNewsBar = () => {
+    if (!isNewsBarVisible) return null;
+    
+    const borderStyle = newsPos === 'top' ? 'border-b' : 'border-t';
+    
+    return (
+      <div className={`absolute ${newsPos === 'top' ? 'top-0' : 'bottom-0'} left-0 w-full z-30 bg-blue-600/90 backdrop-blur-md text-white h-16 flex items-center shadow-2xl ${borderStyle} border-blue-400/30 overflow-hidden transition-all duration-500`}>
+        {settings.news_enabled && news.length > 0 && (
+          <>
+            <div className="px-6 py-2 bg-blue-800 h-full flex items-center justify-center font-bold text-xl z-10 shadow-lg shrink-0 select-none">
+              ÚLTIMAS NOTÍCIAS
+            </div>
+            <div className="ticker-wrap flex-1 flex items-center h-full text-2xl font-medium tracking-wide">
+              <div 
+                className="ticker"
+                style={{ animationDuration: `${tickerDuration}s` }}
+              >
+                {news.map((item, idx) => (
+                  <span key={idx} className="inline-flex items-center shrink-0 mr-24">
+                    <span className="w-3 h-3 rounded-full bg-blue-300 mr-4 animate-pulse shrink-0 shadow-[0_0_8px_rgba(147,197,253,0.8)]" />
+                    <span>{item}</span>
+                  </span>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+        {!settings.news_enabled && <div className="flex-1" />}
+
+        {settings.weather_enabled && weather && (
+          <div className="px-6 py-2 bg-blue-800/90 backdrop-blur-md h-full flex items-center justify-center font-semibold text-lg z-10 shadow-lg shrink-0 border-l border-blue-400/30 select-none">
+            {weather}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderCorner = (cornerName, itemsAlignment) => {
+    const isTop = cornerName.startsWith('top');
+    const isLeft = cornerName.endsWith('left');
+    
+    let verticalSpacing = isTop ? 'top-8' : 'bottom-8';
+    if (isNewsBarVisible) {
+      if (isTop && newsPos === 'top') {
+        verticalSpacing = 'top-[5.5rem]';
+      } else if (!isTop && newsPos === 'bottom') {
+        verticalSpacing = 'bottom-[5.5rem]';
+      }
+    }
+    
+    const horizontalSpacing = isLeft ? 'left-8' : 'right-8';
+    
+    const logoHere = (settings.logo_position || 'top-left') === cornerName;
+    const clockHere = (settings.clock_position || 'top-right') === cornerName;
+    
+    if (!logoHere && !clockHere) return null;
+    
+    return (
+      <div 
+        className={`absolute ${verticalSpacing} ${horizontalSpacing} z-20 flex flex-col gap-4 ${itemsAlignment} transition-all duration-500 ease-in-out`}
+      >
+        {logoHere && renderLogo()}
+        {clockHere && renderClock()}
+      </div>
+    );
+  };
+
   if (media.length === 0) {
     return (
       <div className="w-screen h-screen bg-black flex items-center justify-center">
@@ -215,70 +324,12 @@ export default function TVDisplay() {
       </div>
 
       {/* Overlay Layer */}
-      <div className="absolute inset-0 z-20 pointer-events-none flex flex-col justify-between">
-        
-        {/* Top bar (Clock) */}
-        <div className="p-8 flex justify-end">
-          <div className="bg-black/40 backdrop-blur-md px-6 py-3 rounded-2xl border border-white/10 shadow-2xl">
-            <span className="text-white text-5xl font-bold tracking-wider drop-shadow-lg">
-              {time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-            </span>
-          </div>
-        </div>
-
-        {/* Bottom area (Logo & News) */}
-        <div>
-          {/* Logo */}
-          <div className="px-8 pb-8 flex justify-start">
-            <div className="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/20 shadow-2xl">
-              {settings.logo_url ? (
-                <img 
-                  src={getAssetUrl(settings.logo_url)}
-                  className="max-h-16 max-w-[220px] object-contain block" 
-                  alt="Logo" 
-                />
-              ) : (
-                <div className="text-white text-3xl font-black tracking-tighter flex items-center gap-2">
-                  <span className="bg-blue-600 text-white px-2 py-1 rounded">TV</span>
-                  <span>DLOG</span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* News Ticker & Weather */}
-          {((settings.news_enabled && news.length > 0) || (settings.weather_enabled && weather)) && (
-            <div className="bg-blue-600/90 backdrop-blur-md text-white h-16 flex items-center shadow-2xl border-t border-blue-400/30 overflow-hidden">
-              {settings.news_enabled && news.length > 0 && (
-                <>
-                  <div className="px-6 py-2 bg-blue-800 h-full flex items-center justify-center font-bold text-xl z-10 shadow-lg shrink-0">
-                    ÚLTIMAS NOTÍCIAS
-                  </div>
-                  <div className="ticker-wrap flex-1 flex items-center h-full text-2xl font-medium tracking-wide">
-                    <div 
-                      className="ticker"
-                      style={{ animationDuration: `${tickerDuration}s` }}
-                    >
-                      {news.map((item, idx) => (
-                        <span key={idx} className="inline-flex items-center shrink-0 mr-24">
-                          <span className="w-3 h-3 rounded-full bg-blue-300 mr-4 animate-pulse shrink-0 shadow-[0_0_8px_rgba(147,197,253,0.8)]" />
-                          <span>{item}</span>
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </>
-              )}
-              {!settings.news_enabled && <div className="flex-1" />}
-
-              {settings.weather_enabled && weather && (
-                <div className="px-6 py-2 bg-blue-800/90 backdrop-blur-md h-full flex items-center justify-center font-semibold text-lg z-10 shadow-lg shrink-0 border-l border-blue-400/30">
-                  {weather}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+      <div className="absolute inset-0 z-20 pointer-events-none">
+        {renderCorner('top-left', 'items-start')}
+        {renderCorner('top-right', 'items-end')}
+        {renderCorner('bottom-left', 'items-start')}
+        {renderCorner('bottom-right', 'items-end')}
+        {renderNewsBar()}
       </div>
 
     </div>

@@ -12,7 +12,7 @@ class ISettingsService(ABC):
         pass
 
     @abstractmethod
-    def update_settings(self, news_enabled: bool, weather_enabled: bool, weather_city: str, sync_interval: int) -> None:
+    def update_settings(self, news_enabled: bool, weather_enabled: bool, weather_city: str, sync_interval: int, logo_blur_enabled: bool, logo_position: str, clock_position: str, news_position: str) -> None:
         pass
 
     @abstractmethod
@@ -40,20 +40,32 @@ class SettingsService(ISettingsService):
         weather_enabled_setting = self.settings_repo.get_by_key("weather_enabled")
         weather_city_setting = self.settings_repo.get_by_key("weather_city")
         sync_interval_setting = self.settings_repo.get_by_key("sync_interval")
+        logo_blur_setting = self.settings_repo.get_by_key("logo_blur_enabled")
+        logo_position_setting = self.settings_repo.get_by_key("logo_position")
+        clock_position_setting = self.settings_repo.get_by_key("clock_position")
+        news_position_setting = self.settings_repo.get_by_key("news_position")
 
         return {
             "news_enabled": news_setting.value == "true" if news_setting else True,
             "logo_url": logo_setting.value if logo_setting and logo_setting.value else None,
             "weather_enabled": weather_enabled_setting.value == "true" if weather_enabled_setting else False,
             "weather_city": weather_city_setting.value if weather_city_setting else "Brasília",
-            "sync_interval": int(sync_interval_setting.value) if sync_interval_setting else 15
+            "sync_interval": int(sync_interval_setting.value) if sync_interval_setting else 15,
+            "logo_blur_enabled": logo_blur_setting.value == "true" if logo_blur_setting else True,
+            "logo_position": logo_position_setting.value if logo_position_setting else "top-left",
+            "clock_position": clock_position_setting.value if clock_position_setting else "top-right",
+            "news_position": news_position_setting.value if news_position_setting else "bottom"
         }
 
-    def update_settings(self, news_enabled: bool, weather_enabled: bool, weather_city: str, sync_interval: int) -> None:
+    def update_settings(self, news_enabled: bool, weather_enabled: bool, weather_city: str, sync_interval: int, logo_blur_enabled: bool, logo_position: str, clock_position: str, news_position: str) -> None:
         self.settings_repo.set_key_value("news_enabled", "true" if news_enabled else "false")
         self.settings_repo.set_key_value("weather_enabled", "true" if weather_enabled else "false")
         self.settings_repo.set_key_value("weather_city", weather_city.strip())
         self.settings_repo.set_key_value("sync_interval", str(max(1, sync_interval)))
+        self.settings_repo.set_key_value("logo_blur_enabled", "true" if logo_blur_enabled else "false")
+        self.settings_repo.set_key_value("logo_position", logo_position.strip())
+        self.settings_repo.set_key_value("clock_position", clock_position.strip())
+        self.settings_repo.set_key_value("news_position", news_position.strip())
         self.settings_repo.commit()
 
     def upload_logo(self, file: UploadFile) -> str:
