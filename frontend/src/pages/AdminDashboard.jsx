@@ -12,7 +12,13 @@ import MediaList from '../components/MediaList';
 
 export default function AdminDashboard() {
   const [media, setMedia] = useState([]);
-  const [settings, setSettings] = useState({ news_enabled: true });
+  const [settings, setSettings] = useState({ 
+    news_enabled: true, 
+    logo_blur_enabled: true,
+    logo_position: 'top-left',
+    clock_position: 'top-right',
+    news_position: 'bottom'
+  });
   const [uploading, setUploading] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [cityInput, setCityInput] = useState('');
@@ -131,7 +137,11 @@ export default function AdminDashboard() {
         updatedSettings.news_enabled,
         updatedSettings.weather_enabled,
         updatedSettings.weather_city || cityInput,
-        updatedSettings.sync_interval || parseInt(intervalInput) || 15
+        updatedSettings.sync_interval || parseInt(intervalInput) || 15,
+        updatedSettings.logo_blur_enabled !== undefined ? updatedSettings.logo_blur_enabled : settings.logo_blur_enabled,
+        updatedSettings.logo_position || settings.logo_position || 'top-left',
+        updatedSettings.clock_position || settings.clock_position || 'top-right',
+        updatedSettings.news_position || settings.news_position || 'bottom'
       );
       fetchData();
     } catch (err) {

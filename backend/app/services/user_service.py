@@ -54,7 +54,7 @@ class UserService(IUserService):
             raise ValueError("Password must be at least 6 characters long")
 
         password_hash = get_password_hash(password)
-        new_user = User(username=username, password_hash=password_hash)
+        new_user = User(username=username, password_hash=password_hash, must_change_password=True)
         return self.user_repo.create(new_user)
 
     def reset_password(self, username: str, new_password: str) -> None:
@@ -66,6 +66,7 @@ class UserService(IUserService):
             raise KeyError(f"User '{username}' not found")
 
         user.password_hash = get_password_hash(new_password)
+        user.must_change_password = False
         self.user_repo.commit()
 
     def delete_user(self, username: str) -> None:

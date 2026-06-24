@@ -19,19 +19,22 @@ export default function SettingsPanel({
 
   const toggleNews = () => {
     onUpdateSettings({
+      ...settings,
       news_enabled: !settings.news_enabled,
-      weather_enabled: settings.weather_enabled,
-      weather_city: settings.weather_city,
-      sync_interval: settings.sync_interval
     });
   };
 
   const toggleWeather = () => {
     onUpdateSettings({
-      news_enabled: settings.news_enabled,
+      ...settings,
       weather_enabled: !settings.weather_enabled,
-      weather_city: settings.weather_city,
-      sync_interval: settings.sync_interval
+    });
+  };
+
+  const toggleLogoBlur = () => {
+    onUpdateSettings({
+      ...settings,
+      logo_blur_enabled: !settings.logo_blur_enabled
     });
   };
 
@@ -114,7 +117,7 @@ export default function SettingsPanel({
       <div className="p-4 bg-zinc-900 rounded-lg space-y-4">
         <div>
           <p className="font-medium">Logotipo da TV</p>
-          <p className="text-sm text-zinc-400">Substitua o logotipo por uma imagem personalizada no canto inferior esquerdo</p>
+          <p className="text-sm text-zinc-400">Substitua o logotipo por uma imagem personalizada no canto superior esquerdo</p>
         </div>
         
         {settings.logo_url ? (
@@ -157,6 +160,79 @@ export default function SettingsPanel({
             />
           </div>
         )}
+
+        {/* Switch para Fundo Borrado (Blur) */}
+        <div className="flex items-center justify-between pt-4 border-t border-zinc-800">
+          <div>
+            <p className="font-medium text-sm">Fundo Borrado (Blur)</p>
+            <p className="text-xs text-zinc-400">Exibir fundo semitransparente com desfoque atrás do logotipo</p>
+          </div>
+          <button
+            onClick={toggleLogoBlur}
+            className={`w-14 h-8 flex items-center rounded-full p-1 transition-colors ${
+              settings.logo_blur_enabled ? 'bg-green-500' : 'bg-zinc-600'
+            }`}
+          >
+            <div
+              className={`bg-white w-6 h-6 rounded-full shadow-md transform transition-transform ${
+                settings.logo_blur_enabled ? 'translate-x-6' : 'translate-x-0'
+              }`}
+            />
+          </button>
+        </div>
+      </div>
+
+      {/* Posicionamento dos Componentes */}
+      <div className="p-4 bg-zinc-900 rounded-lg space-y-4">
+        <div>
+          <p className="font-medium">Posicionamento dos Componentes</p>
+          <p className="text-sm text-zinc-400">Personalize onde cada elemento será exibido na tela da TV</p>
+        </div>
+        
+        <div className="grid grid-cols-1 gap-4 pt-2">
+          {/* Logo Position */}
+          <div>
+            <label className="block text-xs font-semibold text-zinc-400 mb-1">Posição do Logotipo</label>
+            <select
+              value={settings.logo_position || 'top-left'}
+              onChange={(e) => onUpdateSettings({ ...settings, logo_position: e.target.value })}
+              className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500"
+            >
+              <option value="top-left">Superior Esquerdo</option>
+              <option value="top-right">Superior Direito</option>
+              <option value="bottom-left">Inferior Esquerdo</option>
+              <option value="bottom-right">Inferior Direito</option>
+            </select>
+          </div>
+
+          {/* Clock Position */}
+          <div>
+            <label className="block text-xs font-semibold text-zinc-400 mb-1">Posição do Relógio</label>
+            <select
+              value={settings.clock_position || 'top-right'}
+              onChange={(e) => onUpdateSettings({ ...settings, clock_position: e.target.value })}
+              className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500"
+            >
+              <option value="top-left">Superior Esquerdo</option>
+              <option value="top-right">Superior Direito</option>
+              <option value="bottom-left">Inferior Esquerdo</option>
+              <option value="bottom-right">Inferior Direito</option>
+            </select>
+          </div>
+
+          {/* News Position */}
+          <div>
+            <label className="block text-xs font-semibold text-zinc-400 mb-1">Posição da Barra de Notícias</label>
+            <select
+              value={settings.news_position || 'bottom'}
+              onChange={(e) => onUpdateSettings({ ...settings, news_position: e.target.value })}
+              className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500"
+            >
+              <option value="top">Superior (Topo)</option>
+              <option value="bottom">Inferior (Rodapé)</option>
+            </select>
+          </div>
+        </div>
       </div>
 
       {/* Tempo de Sincronização Setting */}

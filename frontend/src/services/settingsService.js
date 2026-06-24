@@ -6,12 +6,16 @@ export const settingsService = {
     return response.data;
   },
 
-  updateSettings: async (news_enabled, weather_enabled, weather_city, sync_interval) => {
+  updateSettings: async (news_enabled, weather_enabled, weather_city, sync_interval, logo_blur_enabled, logo_position, clock_position, news_position) => {
     const response = await api.put('/api/settings', {
       news_enabled,
       weather_enabled,
       weather_city,
       sync_interval,
+      logo_blur_enabled,
+      logo_position,
+      clock_position,
+      news_position
     });
     return response.data;
   },

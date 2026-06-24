@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException, status, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Depends, HTTPException, status, WebSocket, WebSocketDisconnect, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -10,7 +10,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-from database import init_db
+from database import init_db, get_db
+from sqlalchemy.orm import Session
+from models.audit_log import AuditLog
 from auth import create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
 from core.websocket import manager
 from core.dependencies import get_user_service
@@ -34,15 +36,48 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from core.context import set_request_context, clear_request_context
+
+# Middleware to capture client IP address for database auditing
+@app.middleware("http")
+async def audit_context_middleware(request: Request, call_next):
+    ip_address = request.client.host if request.client else None
+    set_request_context(user_id=None, username=None, ip_address=ip_address)
+    try:
+        response = await call_next(request)
+        return response
+    finally:
+        clear_request_context()
+
 # Serve uploaded files
 UPLOAD_DIR = os.getenv("UPLOAD_DIR", "uploads")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 
-# Initialize database on startup
+# Initialize database and apply migrations on startup
 @app.on_event("startup")
 async def startup_event():
+    # Run Alembic migrations programmatically
+    try:
+        import logging
+        from alembic.config import Config
+        from alembic import command
+        
+        logger = logging.getLogger(__name__)
+        logger.info("⚙️ Running Alembic database migrations...")
+        
+        base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+        ini_path = os.path.join(base_dir, "alembic.ini")
+        
+        alembic_cfg = Config(ini_path)
+        command.upgrade(alembic_cfg, "head")
+        logger.info("✅ Alembic database migrations completed successfully")
+    except Exception as migration_error:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"❌ Alembic database migrations failed: {migration_error}")
+        
     init_db()
 
 @app.websocket("/ws")
@@ -59,21 +94,59 @@ async def websocket_endpoint(websocket: WebSocket):
 
 @app.post("/api/auth/login")
 async def login_for_access_token(
+    request: Request,
     form_data: OAuth2PasswordRequestForm = Depends(),
-    user_service: IUserService = Depends(get_user_service)
+    user_service: IUserService = Depends(get_user_service),
+    db: Session = Depends(get_db)
 ):
+    ip_address = request.client.host if request.client else None
     user = user_service.authenticate_user(form_data.username, form_data.password)
+    
     if not user:
+        try:
+            failed_log = AuditLog(
+                username=form_data.username,
+                action="LOGIN_FAILED",
+                entity_type="User",
+                ip_address=ip_address,
+                details=f"Tentativa de login falhou para o usuário '{form_data.username}'"
+            )
+            db.add(failed_log)
+            db.commit()
+        except Exception as e:
+            # Don't let logging failures block the authentication flow response
+            pass
+
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    
+    try:
+        success_log = AuditLog(
+            user_id=user.id,
+            username=user.username,
+            action="LOGIN_SUCCESS",
+            entity_type="User",
+            entity_id=user.id,
+            ip_address=ip_address,
+            details=f"Usuário '{user.username}' realizou login com sucesso"
+        )
+        db.add(success_log)
+        db.commit()
+    except Exception as e:
+        pass
+
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
         data={"sub": user.username}, expires_delta=access_token_expires
     )
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "must_change_password": user.must_change_password
+    }
 
 from routers import media, settings, news, admin
 app.include_router(media.router)

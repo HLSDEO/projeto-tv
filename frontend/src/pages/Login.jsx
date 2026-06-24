@@ -11,8 +11,12 @@ export default function Login() {
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      await authService.login(username, password);
-      navigate('/admin');
+      const data = await authService.login(username, password);
+      if (data.must_change_password) {
+        navigate('/change-password');
+      } else {
+        navigate('/admin');
+      }
     } catch {
       setError('Credenciais inválidas');
     }
