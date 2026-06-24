@@ -33,7 +33,7 @@ def update_media(
     media_service: IMediaService = Depends(get_media_service)
 ):
     try:
-        return media_service.update_media(media_id, data.duration, data.active, data.order)
+        return media_service.update_media(media_id, data.duration, data.active, data.order, data.scheduled_start)
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:

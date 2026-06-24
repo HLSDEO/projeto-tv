@@ -43,6 +43,7 @@ def init_db():
         Base.metadata.create_all(bind=engine)
         logger.info("✅ Database tables created/verified")
 
+<<<<<<< HEAD
         # Ensure must_change_password column exists on users table (for existing database schemas)
         db_ensure = SessionLocal()
         try:
@@ -55,6 +56,17 @@ def init_db():
             db_ensure.rollback()
         finally:
             db_ensure.close()
+=======
+        # Lightweight migrations for columns added after the initial release.
+        # create_all() does not alter existing tables, so new columns are added idempotently here.
+        from sqlalchemy import text
+        with engine.begin() as conn:
+            conn.execute(text(
+                "ALTER TABLE media ADD COLUMN IF NOT EXISTS scheduled_start TIMESTAMP"
+            ))
+        logger.info("✅ Database migrations applied")
+
+>>>>>>> 5f706791e8ec615419b552a5084fec8f261c6452
 
         # Create default admin user
         db = SessionLocal()

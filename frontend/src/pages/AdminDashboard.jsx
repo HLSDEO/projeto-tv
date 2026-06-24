@@ -82,7 +82,13 @@ export default function AdminDashboard() {
   const handleUpdateMedia = async (m, updates) => {
     try {
       const updated = { ...m, ...updates };
-      await mediaService.updateMedia(m.id, updated.duration, updated.active, updated.order);
+      await mediaService.updateMedia(
+        m.id,
+        updated.duration,
+        updated.active,
+        updated.order,
+        updated.scheduled_start ?? null
+      );
       fetchData();
     } catch (err) {
       console.error('Update failed', err);

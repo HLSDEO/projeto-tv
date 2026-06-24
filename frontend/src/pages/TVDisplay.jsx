@@ -58,7 +58,10 @@ export default function TVDisplay() {
         newsService.getNews()
       ]);
       
-      const activeMedia = mediaData.filter(m => m.active);
+      const now = new Date();
+      const activeMedia = mediaData.filter(
+        m => m.active && (!m.scheduled_start || new Date(m.scheduled_start) <= now)
+      );
       setMedia(activeMedia);
       setSettings(settingsData);
       setNews(newsData.news);

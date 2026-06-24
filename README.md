@@ -1,169 +1,59 @@
-# TV DLOG - Digital Signage & TV Display System
+# PROJETO TV - Sistema de Sinalização Digital e Exibição de TV
 
-A full-stack web application for managing and displaying media content on TV screens with integrated news ticker functionality. Perfect for digital signage, information displays, and media showcases in offices, airports, and public spaces.
+Uma aplicação web completa para gerenciar e exibir conteúdo de mídia em telas de TV com funcionalidade integrada de notícias em tempo real. Perfeita para sinalização digital, painéis informativos e vitrines de mídia em escritórios, aeroportos e espaços públicos.
 
 ## ✨ Features
 
-- **📺 Media Carousel**: Display images and videos in automatic rotation on full-screen TV interface
-- **🎛️ Admin Dashboard**: User-friendly interface to upload media, manage display order, and set display durations
-- **📰 News Ticker**: Real-time news ticker displaying headlines from G1 Globo RSS feed
-- **🔐 Authentication**: Secure login system protecting admin features with JWT tokens
-- **⏱️ Dynamic Scheduling**: Configurable display time for each media item
-- **🕐 Live Clock**: Real-time clock display in the top-right corner of TV view
-- **📱 Responsive Design**: Full-screen optimized interface for TV displays
-- **🎨 Modern UI**: Clean, intuitive interface built with React and Tailwind CSS
+- **📺 Media Carousel**: Exiba imagens e vídeos em rotação automática na interface de TV em tela cheia.
+- **🎛️ Admin Dashboard**: Interface amigável para carregar mídias, gerenciar a ordem de exibição e definir a duração das exibições.
+- **📰 News Ticker**: Notícias em tempo real exibindo manchetes do feed RSS da G1 Globo.
+- **⏱️ Dynamic Scheduling**: Tempo de exibição configurável para cada item de mídia.
+- **🗓️ Scheduled Start**: Defina uma data e hora de início futuras para cada item de mídia — ele permanece na lista de reprodução, mas só aparece na TV quando esse momento chegar (vazio = exibido imediatamente).
+- **🕐 Live Clock**: Exibição do relógio em tempo real no canto superior direito da tela da TV.
+- **📱 Responsive Design**: Interface otimizada para tela cheia em televisores.
 
-## 🏗️ Technology Stack
+## 🏗️ Infraestrutura / Stack
 
 ### Backend
-- **FastAPI** - Modern Python web framework for building APIs
-- **PostgreSQL** - Reliable relational database for data management
-- **SQLAlchemy** - Python SQL toolkit and ORM
-- **Uvicorn** - ASGI server for running the FastAPI application
-- **JWT** - JSON Web Tokens for secure authentication
+- **FastAPI**
+- **PostgreSQL**
+- **SQLAlchemy**
+- **Uvicorn**
 
 ### Frontend
-- **React 19** - Modern JavaScript library for building user interfaces
-- **Vite** - Fast build tool and development server
-- **Tailwind CSS** - Utility-first CSS framework for styling
-- **React Router** - Client-side routing and navigation
-- **Axios** - HTTP client for API communication
+- **React 19**
+- **Vite**
+- **Tailwind CSS**
+- **React Router**
+- **Axios**
 
-### Infrastructure
-- **Docker** - Containerization for consistent environments
-- **Docker Compose** - Orchestration for multi-container applications
-- **PostgreSQL 15** - High-performance relational database
+## 🚀 Início rápido
 
-## 📐 Architecture & Database Models
+### Pré-requisitos
+- Docker instalados em seu sistema (se windows Docker Desktop).
 
-The system is designed with a modern, decoupled **Controller-Service-Repository (CSR)** architecture for high maintainability, testability, and clean separation of concerns.
-
-### 1. Software Architecture (CSR Model)
-
-In the diagram below, each layer communicates only with the layers directly beneath it. Dependecy Inversion is fully implemented through Python Abstract Base Classes (`abc.ABC`), allowing database and third-party integrations to be easily mocked for unit tests.
-
-```mermaid
-graph TD
-    subgraph Client Layer
-        UI["📺 React Admin / TV Display"]
-    end
-
-    subgraph API Presentation Layer
-        Router["routers/*.py (Controllers)"]
-        Main["main.py (FastAPI App)"]
-    end
-
-    subgraph Business Logic Layer (Services)
-        US["UserService"]
-        MS["MediaService"]
-        SS["SettingsService"]
-        EXS["ExternalService"]
-    end
-
-    subgraph Data Access Layer (Repositories)
-        UR["UserRepository"]
-        MR["MediaRepository"]
-        SR["SettingsRepository"]
-    end
-
-    subgraph Infrastructure / Storage Layer
-        DB[("🐘 PostgreSQL DB")]
-        FS[("💾 Local File Storage")]
-        ExtAPI["🌐 External APIs: G1 RSS / wttr.in"]
-    end
-
-    UI -->|HTTP / WebSockets| Main
-    Main --> Router
-    Router -->|Injected Dependency| US
-    Router -->|Injected Dependency| MS
-    Router -->|Injected Dependency| SS
-    Router -->|Injected Dependency| EXS
-
-    US -->|Contracts| UR
-    MS -->|Contracts| MR
-    SS -->|Contracts| SR
-    EXS -->|HTTP Client| ExtAPI
-
-    UR -->|SQLAlchemy| DB
-    MR -->|SQLAlchemy| DB
-    SR -->|SQLAlchemy| DB
-
-    MS -->|File I/O| FS
-    SS -->|File I/O| FS
-```
-
-### 2. Database Model (ERD)
-
-The project leverages a robust relational **PostgreSQL** schema to store users, media playlists, and system-wide configuration keys.
-
-```mermaid
-erDiagram
-    users {
-        int id PK "Serial, Primary Key"
-        string username UK "Varchar(50), Unique, Index"
-        string password_hash "Varchar(255)"
-    }
-    media {
-        int id PK "Serial, Primary Key"
-        string filename "Varchar(255)"
-        string original_name "Varchar(255)"
-        string type "Varchar(20) - 'image' or 'video'"
-        int duration "Integer - default 10 seconds"
-        boolean active "Boolean - default True"
-        int order "Integer - playlist rank"
-        datetime uploaded_at "Timestamp - default UTC"
-        string url "Varchar(550)"
-    }
-    settings {
-        int id PK "Serial, Primary Key"
-        string key UK "Varchar(100), Unique, Index"
-        string value "Text"
-    }
-```
-
-## 🚀 Quick Start
-
-### Prerequisites
-- Docker and Docker Compose installed on your system
-  - [Install Docker](https://docs.docker.com/get-docker/)
-  - [Install Docker Compose](https://docs.docker.com/compose/install/)
-
-### Running with Docker (Recommended)
-
-1. **Clone the repository**
+1. **Clona ou baixa o repositório**
    ```bash
    git clone <repository-url>
    cd projeto-tv
    ```
 
-2. **Start all services**
+2. **Inicio dos serviços*
    ```bash
    docker-compose up
    ```
 
-   This command will:
-   - Build and start the FastAPI backend (http://localhost:8000)
-   - Build and start the React frontend (http://localhost:5173)
-   - Start the PostgreSQL database (port 5432)
-   - Create persistent volumes for uploads and database data
-   - Automatically initialize the database and create default admin user
-
-3. **Access the application**
-   - **Frontend**: http://localhost:5173
+3. **Acesso a aplicação**
+   - **Frontend**: http://localhost:3100
+   - **Painel de administração**: http://localhost:3100/admin
    - **Backend API**: http://localhost:8000/docs (Swagger UI)
-   - **API**: http://localhost:8000
+   - **Backend**: http://localhost:8000
 
-4. **Login to the admin dashboard**
+4. **Usuário e senha do painel de ADMIN**
    - Username: `admin`
    - Password: `admin123`
 
-5. **Start using the app**
-   - Upload media files from the admin dashboard
-   - Set display durations for each item
-   - Toggle news display on/off
-   - The TV Display screen will automatically rotate through your media with the news ticker at the bottom
-
-## 📁 Project Structure
+## 📁 Estrutura do Projeto
 
 ```text
 projeto-tv/
@@ -219,309 +109,9 @@ projeto-tv/
 └── README.md                    # This file
 ```
 
+### Para desenvolvedores
 
-## ⚙️ Configuration
-
-### Environment Variables
-
-The application uses the following environment variables (defined in `docker-compose.yml`):
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `DATABASE_URL` | `postgresql://tvdlog:tvdlog123@postgres:5432/tv_dlog_db` | PostgreSQL connection URL |
-| `SECRET_KEY` | `minha_chave_secreta_jwt_super_segura` | JWT secret key for token signing |
-| `VITE_API_URL` | `http://localhost:8000` | API URL for frontend |
-
-### Database Credentials
-
-PostgreSQL database is automatically created with:
-- **User**: `tvdlog`
-- **Password**: `tvdlog123`
-- **Database**: `tv_dlog_db`
-- **Port**: `5432`
-
-### Customizing Configuration
-
-To change these values, edit the `docker-compose.yml` file before running `docker-compose up`.
-
-### Admin Dashboard Settings
-
-Once logged in, you can configure:
-- **News Display**: Toggle the news ticker on/off
-- **Media Display Order**: Drag to reorder media items
-- **Display Duration**: Set how long each media item displays (in seconds)
-- **Activate/Deactivate**: Control which media items are shown
-
-## 📡 API Reference
-
-All API endpoints require authentication (except login endpoint).
-
-### Authentication
-
-#### Login
-```http
-POST /api/auth/login
-Content-Type: application/x-www-form-urlencoded
-
-username=admin&password=admin123
-```
-
-**Response:**
-```json
-{
-  "access_token": "eyJ0eXAiOiJKV1QiLCJhbGc...",
-  "token_type": "bearer"
-}
-```
-
-**Use this token in subsequent requests:**
-```http
-Authorization: Bearer <access_token>
-```
-
-### Media Management
-
-#### Get All Media
-```http
-GET /api/media
-```
-
-**Response:**
-```json
-[
-  {
-    "_key": "12345",
-    "filename": "a1b2c3d4.jpg",
-    "original_name": "my-image.jpg",
-    "type": "image",
-    "duration": 10,
-    "active": true,
-    "order": 1,
-    "uploaded_at": "2026-05-19T10:30:00",
-    "url": "/uploads/a1b2c3d4.jpg"
-  }
-]
-```
-
-#### Upload Media
-```http
-POST /api/media
-Content-Type: multipart/form-data
-Authorization: Bearer <token>
-
-file: <binary-file>
-duration: 10
-```
-
-**Supported Formats:**
-- **Images**: jpg, jpeg, png, gif, webp, bmp
-- **Videos**: mp4, webm, ogg, mov, avi
-
-**Response:**
-```json
-{
-  "_key": "12345",
-  "filename": "a1b2c3d4.jpg",
-  "original_name": "my-image.jpg",
-  "type": "image",
-  "duration": 10,
-  "active": true,
-  "order": 1,
-  "uploaded_at": "2026-05-19T10:30:00",
-  "url": "/uploads/a1b2c3d4.jpg"
-}
-```
-
-#### Update Media
-```http
-PUT /api/media/{media_id}
-Content-Type: application/json
-Authorization: Bearer <token>
-
-{
-  "duration": 15,
-  "active": true,
-  "order": 2
-}
-```
-
-#### Delete Media
-```http
-DELETE /api/media/{media_id}
-Authorization: Bearer <token>
-```
-
-### Settings
-
-#### Get Settings
-```http
-GET /api/settings
-```
-
-**Response:**
-```json
-{
-  "news_enabled": true
-}
-```
-
-#### Update Settings
-```http
-PUT /api/settings
-Content-Type: application/json
-Authorization: Bearer <token>
-
-{
-  "news_enabled": false
-}
-```
-
-### News
-
-#### Get Latest News
-```http
-GET /api/news
-```
-
-**Response:**
-```json
-{
-  "news": [
-    "Breaking: New Policy Announced",
-    "Technology: AI Advances Rapidly",
-    "Business: Market Updates",
-    "Science: New Discovery",
-    "Sports: Team Wins Championship"
-  ]
-}
-```
-
-### Admin - User Management
-
-#### List All Users
-```http
-GET /api/admin/users
-Authorization: Bearer <admin-token>
-```
-
-**Response:**
-```json
-{
-  "users": [
-    {
-      "username": "admin",
-      "created_at": null
-    },
-    {
-      "username": "user1",
-      "created_at": "2026-05-19T10:30:00"
-    }
-  ]
-}
-```
-
-#### Create New User
-```http
-POST /api/admin/users
-Content-Type: application/json
-Authorization: Bearer <admin-token>
-
-{
-  "username": "newuser",
-  "password": "securepassword123"
-}
-```
-
-**Requirements:**
-- Username: at least 3 characters
-- Password: at least 6 characters
-- Only admin can create users
-
-**Response:**
-```json
-{
-  "status": "success",
-  "message": "User 'newuser' created successfully"
-}
-```
-
-#### Reset User Password
-```http
-PUT /api/admin/users/{username}/password?new_password=newpassword123
-Authorization: Bearer <token>
-```
-
-**Requirements:**
-- Password: at least 6 characters
-- Admin can reset any user's password
-- Users can reset their own password
-
-**Response:**
-```json
-{
-  "status": "success",
-  "message": "Password for user 'username' reset successfully"
-}
-```
-
-#### Delete User
-```http
-DELETE /api/admin/users/{username}
-Authorization: Bearer <admin-token>
-```
-
-**Requirements:**
-- Only admin can delete users
-- Cannot delete the admin account
-
-**Response:**
-```json
-{
-  "status": "success",
-  "message": "User 'username' deleted successfully"
-}
-```
-
-## 👥 Usage Guide
-
-### For Non-Technical Users
-
-#### Accessing the Admin Dashboard
-1. Open http://localhost:5173 in your web browser
-2. Login with username `admin` and password `admin123`
-3. You're now in the admin dashboard
-
-#### Uploading Media
-1. Click the **"Upload Media"** button in the admin dashboard
-2. Select an image or video file from your computer
-3. Set the **display duration** (how many seconds to show this item)
-4. Click **"Upload"**
-5. Your media will be added to the carousel
-
-#### Managing Display Order
-1. In the admin dashboard, you'll see all uploaded media
-2. Drag media items to reorder them
-3. The carousel will display items in this order
-
-#### Setting Display Duration
-1. For each media item, you can adjust the **duration** (in seconds)
-2. Higher values mean the item displays longer
-3. Typical range: 10-30 seconds per item
-
-#### Toggling News Display
-1. In the admin dashboard, find the **news toggle** switch
-2. Turn it **on** to display news ticker
-3. Turn it **off** to hide the news ticker
-
-#### Viewing the TV Display
-1. Click the **"TV Display"** link to see the full-screen carousel
-2. Media items will rotate automatically based on their durations
-3. The current time is shown in the top-right corner
-4. News headlines appear at the bottom (if enabled)
-
-### For Developers
-
-#### Running Locally (Without Docker)
+#### Executando localmente (sem Docker)
 
 **Backend Setup:**
 ```bash
@@ -570,253 +160,11 @@ docker run -d --name postgres-db \
 ```
 
 
-#### Modifying the TV Carousel Component
-
-The carousel is located at `frontend/src/pages/TVDisplay.jsx`. To customize:
-
-```jsx
-// Adjust carousel animation duration
-const carouselDuration = 5000; // milliseconds
-
-// Modify styling
-// The component uses Tailwind CSS classes
-
-// Add custom effects
-// (e.g., fade transitions, zoom effects, etc.)
-```
-
-#### Adding New API Endpoints
-
-Create a new router file in `backend/app/routers/`:
-
-```python
-# backend/app/routers/myfeature.py
-from fastapi import APIRouter, Depends
-from app.auth import get_current_user
-
-router = APIRouter(prefix="/api/myfeature", tags=["myfeature"])
-
-@router.get("/")
-def get_data(username: str = Depends(get_current_user)):
-    # Your implementation here
-    return {"data": "value"}
-```
-
-Then include it in `backend/app/main.py`:
-
-```python
-from app.routers import myfeature
-app.include_router(myfeature.router)
-```
-
-#### Customizing Styling
-
-The application uses Tailwind CSS. Customize styles by:
-
-1. Modifying class names in component files
-2. Adding custom CSS in `frontend/src/index.css`
-3. Creating custom Tailwind components
-
-#### Database Queries
-
-Querying database using repositories in the new CSR architecture:
-
-```python
-from app.core.dependencies import get_media_service
-
-# Resolving dependencies using FastAPI / direct injection
-# The media service fetches the media list sorted by 'order' ascending using IMediaRepository
-media_service = get_media_service(db)
-media_list = media_service.get_all_media()
-```
-
-
-## 🔧 Troubleshooting
-
-### Port Conflicts
-If ports 5173, 8000, or 5432 are already in use:
-
-**Option 1**: Change ports in `docker-compose.yml`
-```yaml
-ports:
-  - "3001:5173"  # Changed from 5173 to 3001
-```
-
-**Option 2**: Stop conflicting services
-```bash
-# Find services using the port
-lsof -i :8000
-
-# Kill the service
-kill -9 <PID>
-```
-
-### Database Connection Error
-If you see "Cannot connect to PostgreSQL":
-
-1. Ensure PostgreSQL is running: `docker-compose ps`
-2. Check the connection URL matches `DATABASE_URL` setting
-3. Verify PostgreSQL is healthy: `docker-compose logs postgres`
-
-### CORS Errors
-If the frontend can't reach the backend:
-
-1. Verify `VITE_API_URL` environment variable is set correctly
-2. Check that backend is running on the correct port
-3. Ensure CORS middleware is enabled in `backend/app/main.py`
-
-### Login Issues
-
-#### Default Credentials Don't Work
-If login fails with username `admin` and password `admin123`:
-
-**Option 1**: Check backend logs
-```bash
-# View backend logs
-docker-compose logs backend
-
-# Look for errors during startup
-```
-
-**Option 2**: Restart the backend container
-```bash
-# This will reinitialize the database
-docker-compose restart backend
-
-# Wait ~10 seconds and try logging in again
-```
-
-**Option 3**: Reset all data
-```bash
-# Stop and remove containers and volumes
-docker-compose down -v
-
-# Start fresh
-docker-compose up
-```
-
-### Creating Additional Users
-
-You can create new users via the admin API:
-
-```bash
-# First, get a token by logging in as admin
-TOKEN=$(curl -X POST http://localhost:8000/api/auth/login \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "username=admin&password=admin123" \
-  | jq -r '.access_token')
-
-# Create a new user
-curl -X POST http://localhost:8000/api/admin/users \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "username": "newuser",
-    "password": "securepassword123"
-  }'
-```
-
-### Reset All Data
-
-To reset the entire database (including users, media, and settings):
-
-```bash
-# Stop the containers
-docker-compose down
-
-# Remove the PostgreSQL volume
-docker volume rm projeto-tv_postgres_data
-
-# Remove the uploads volume (optional, to delete all uploaded media)
-docker volume rm projeto-tv_upload_data
-
-# Start fresh
-docker-compose up
-```
-
-### View Application Logs
-```bash
-# View logs from Docker containers
-docker-compose logs backend    # Backend logs
-docker-compose logs frontend   # Frontend logs
-docker-compose logs postgres   # Database logs
-
-# Follow logs in real-time
-docker-compose logs -f backend
-
-# View specific number of lines
-docker-compose logs --tail=50 backend
-```
-
-### Viewing Network Requests
-1. Open browser DevTools (F12)
-2. Go to the Network tab
-3. Check API calls and responses
-
-### Connect to PostgreSQL
-
-Access the database directly:
-
-```bash
-# Using psql (if installed)
-psql -h localhost -U tvdlog -d tv_dlog_db -W
-
-# Or via Docker
-docker-compose exec postgres psql -U tvdlog -d tv_dlog_db
-```
-
-Database tables:
-- **users**: User accounts with hashed passwords
-- **media**: All uploaded media items
-- **settings**: Application settings
-
-## 🎯 How It Works
-
-1. **User uploads media** → File is saved to `/uploads` directory and metadata stored in PostgreSQL
-2. **Admin sets duration** → Each media item has a configurable display time
-3. **User reorders media** → Display order is updated in the database
-4. **TV Display fetches media** → Requests all active media from the backend
-5. **Carousel rotates** → Each item displays for its configured duration
-6. **News ticker fetches** → Every 5 minutes, new headlines are fetched from G1 Globo
-7. **Live updates** → Changes in admin dashboard are reflected on TV display in real-time
-
-## 📝 License
-
-This project is provided as-is for educational and commercial use.
-
-## 🤝 Contributing
-
-Contributions are welcome! To contribute:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## 📞 Support
-
-For issues, questions, or suggestions:
-
-1. Check the [Troubleshooting](#-troubleshooting) section
-2. Review existing GitHub issues
-3. Create a new issue with detailed information about your problem
-
-## 🚀 Future Enhancements
-
-Potential features for future versions:
-
-- **Scheduling**: Schedule media playback for specific dates and times
-- **Templates**: Pre-designed layouts and themes for different use cases
-- **Analytics**: Track media views and user engagement
-- **Multi-Display**: Support for managing multiple TV displays from one admin panel
-- **Webhooks**: Integrate with external systems and APIs
-- **Advanced Search**: Filter and search media by tags and metadata
-- **Backup & Restore**: Automated backup of settings and media
-- **API Keys**: Multiple admin accounts with different permissions
-- **Mobile App**: Native mobile app for remote administration
-- **Calendar Integration**: Display calendar events alongside media
+## 🚀 Melhorias Futuras
+
+- **Templates**: Layouts e temas pré-definidos para diferentes casos de uso.
+- **Analytics**: Acompanhe as visualizações de mídia e o engajamento do usuário.
+- **Multi-Display**: Suporte para gerenciar várias telas de TV a partir de um único painel de administração.
+- **Calendar Integration**: Exibir eventos do calendário junto com a mídia
 
 ---
-
-**Built with ❤️ for digital signage and media displays**
