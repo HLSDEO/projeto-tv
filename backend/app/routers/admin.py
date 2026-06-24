@@ -1,9 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List
 import logging
+from sqlalchemy.orm import Session
 
+from database import get_db
+from models.audit_log import AuditLog
 from auth import get_current_user
-from schemas.user import UserCreate
+from schemas.user import UserCreate, PasswordReset
 from services.user_service import IUserService
 from core.dependencies import get_user_service
 
@@ -61,7 +64,7 @@ def create_user(
 @router.put("/users/{user_id}/password")
 def reset_password(
     user_id: str,
-    new_password: str,
+    data: PasswordReset,
     username: str = Depends(get_current_user),
     user_service: IUserService = Depends(get_user_service)
 ):
@@ -73,7 +76,7 @@ def reset_password(
         )
 
     try:
-        user_service.reset_password(user_id, new_password)
+        user_service.reset_password(user_id, data.new_password)
         logger.info(f"Password reset for user '{user_id}'")
         return {
             "status": "success",
@@ -126,3 +129,37 @@ def delete_user(
     except Exception as e:
         logger.error(f"Error deleting user: {e}")
         raise HTTPException(status_code=500, detail="Error deleting user")
+
+@router.get("/audit-logs")
+def list_audit_logs(
+    username: str = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """List system audit logs (admin only)"""
+    if username != 'admin':
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only admin can view audit logs"
+        )
+
+    try:
+        logs = db.query(AuditLog).order_by(AuditLog.timestamp.desc()).limit(200).all()
+        return {
+            "logs": [
+                {
+                    "id": log.id,
+                    "timestamp": log.timestamp.isoformat(),
+                    "user_id": log.user_id,
+                    "username": log.username,
+                    "action": log.action,
+                    "entity_type": log.entity_type,
+                    "entity_id": log.entity_id,
+                    "ip_address": log.ip_address,
+                    "details": log.details
+                }
+                for log in logs
+            ]
+        }
+    except Exception as e:
+        logger.error(f"Error listing audit logs: {e}")
+        raise HTTPException(status_code=500, detail="Error listing audit logs")
