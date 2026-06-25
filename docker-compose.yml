@@ -1,22 +1,4 @@
 services:
-  postgres:
-    image: postgres:15-alpine
-    restart: always
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
-    # Porta para acessar o banco fora do docker
-    # ports:
-    #   - "${POSTGRES_PORT}:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
   backend:
     restart: always
     build:
@@ -24,13 +6,12 @@ services:
     ports:
       - "8200:8000"
     environment:
-      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@tv-dlog-bd:5432/${POSTGRES_DB}
       - SECRET_KEY=${SECRET_KEY}
       - UPLOAD_DIR=${UPLOAD_DIR}
       - PYTHONPATH=/app/app
-    depends_on:
-      postgres:
-        condition: service_healthy
+    networks:
+      - tvdlog-network
     volumes:
       - ./backend:/app
       - ./uploads:/app/uploads # Bind-mount to keep upload files synchronized locally in the project
@@ -44,12 +25,15 @@ services:
     environment:
       - VITE_API_URL=${VITE_API_URL}
       - DOCKER_ENV=true
-
+    networks:
+      - tvdlog-network
     volumes:
       - ./frontend:/app
       - /app/node_modules
     depends_on:
       - backend
 
-volumes:
-  postgres_data:
+networks:
+  tvdlog-network:
+    external: true
+
