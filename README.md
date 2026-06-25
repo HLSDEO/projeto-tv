@@ -38,10 +38,18 @@ Uma aplicação web completa para gerenciar e exibir conteúdo de mídia em tela
    cd projeto-tv
    ```
 
-2. **Inicio dos serviços*
+2. **Inicio dos serviços**
+   
+   Primeiro, inicie a rede e o banco de dados (que rodará continuamente):
    ```bash
-   docker-compose up
+   docker compose -f docker/docker-compose.db.yml up -d
    ```
+
+   Em seguida, inicie o backend e o frontend:
+   ```bash
+   docker compose up -d --build
+   ```
+
 
 3. **Acesso a aplicação**
    - **Frontend**: http://localhost:3100
@@ -158,6 +166,49 @@ docker run -d --name postgres-db \
   -p 5432:5432 \
   postgres:15
 ```
+
+
+## 💾 Backup, Restauração e Agendamento Automático
+
+Para evitar perda de dados em caso de queda de energia ou remoção acidental de volumes do Docker, o projeto conta com um sistema de backups integrados.
+
+### 1. Como fazer backup manualmente
+Para salvar o estado atual do banco (tabelas, configurações e cadastros de mídias), execute na pasta `docker/` do projeto:
+* **No Windows:**
+  Execute duas vezes ou execute no prompt o arquivo `docker/db-backup.bat`.
+* **No Linux/macOS:**
+  ```bash
+  cd docker
+  chmod +x db-backup.sh
+  ./db-backup.sh
+  ```
+Isso gerará o arquivo `db_backup.sql` dentro da pasta `docker/`.
+
+### 2. Como restaurar um backup
+Para carregar o estado salvo no arquivo `docker/db_backup.sql` (útil após queda de energia ou inicialização limpa):
+* **No Windows:**
+  Execute o arquivo `docker/db-restore.bat` (será solicitado um `pause` no final para confirmar o sucesso).
+* **No Linux/macOS:**
+  ```bash
+  cd docker
+  chmod +x db-restore.sh
+  ./db-restore.sh
+  ```
+*Nota: Este comando recriará o esquema `public` do Postgres e aplicará todas as criações de tabelas e inserções gravadas no dump.*
+
+### 3. Agendamento Automático a cada 7 dias (Windows)
+Para garantir que o banco esteja sempre sendo atualizado com novas mídias e modificações, você pode agendar o backup automático:
+1. Abra um prompt de comando (CMD ou PowerShell) **como Administrador**.
+2. Navegue até a pasta `docker/` do projeto:
+   ```cmd
+   cd docker
+   ```
+3. Execute o script de agendamento:
+   ```cmd
+   schedule-backup.bat
+   ```
+4. Pronto! O Agendador de Tarefas do Windows criará uma tarefa chamada `TV-DLOG-Backup-Semanal` para rodar o backup silenciosamente todo domingo às 03:00 da manhã.
+
 
 
 ## 🚀 Melhorias Futuras
