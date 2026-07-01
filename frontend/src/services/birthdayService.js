@@ -10,6 +10,7 @@ export const birthdayService = {
     const response = await api.get('/api/birthdays', {
       params
     });
+    console.log(response);
     return response.data;
   }
 };
