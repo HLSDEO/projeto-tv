@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
-import httpx
 import xml.etree.ElementTree as ET
 import logging
+from core.api import api_get
 
 logger = logging.getLogger(__name__)
 
@@ -25,13 +25,12 @@ class ExternalService(IExternalService):
 
         city_name = city if city else "Brasília"
         try:
-            async with httpx.AsyncClient() as client:
-                response = await client.get(f"https://wttr.in/{city_name}?lang=pt&format=%c+%t+%C", timeout=3.0)
-                if response.status_code == 200:
-                    text = response.text.strip()
-                    if "Unknown location" in text or "Sorry" in text or len(text) > 50:
-                        return {"enabled": True, "weather": f"📍 {city_name}: clima indisponível"}
-                    return {"enabled": True, "weather": f"📍 {city_name}: {text}"}
+            response = api_get(f"https://wttr.in/{city_name}?lang=pt&format=%c+%t+%C", timeout=3.0)
+            if response and response.status_code == 200:
+                text = response.text.strip()
+                if "Unknown location" in text or "Sorry" in text or len(text) > 50:
+                    return {"enabled": True, "weather": f"📍 {city_name}: clima indisponível"}
+                return {"enabled": True, "weather": f"📍 {city_name}: {text}"}
         except Exception as e:
             logger.error(f"Error fetching weather: {e}")
         
@@ -39,19 +38,20 @@ class ExternalService(IExternalService):
 
     async def get_news(self) -> dict:
         try:
-            async with httpx.AsyncClient() as client:
-                response = await client.get(self.rss_url)
-                response.raise_for_status()
+            response = api_get(self.rss_url)
+            if not response:
+                raise Exception("Failed to fetch news feed via api_get")
+            response.raise_for_status()
+            
+            root = ET.fromstring(response.text)
+            news_items = []
+            
+            # Extract first 5 items
+            for item in root.findall('./channel/item')[:5]:
+                title = item.find('title').text if item.find('title') is not None else ""
+                news_items.append(title)
                 
-                root = ET.fromstring(response.text)
-                news_items = []
-                
-                # Extract first 5 items
-                for item in root.findall('./channel/item')[:5]:
-                    title = item.find('title').text if item.find('title') is not None else ""
-                    news_items.append(title)
-                    
-                return {"news": news_items}
+            return {"news": news_items}
         except Exception as e:
             logger.error(f"Error fetching news: {e}")
             return {"news": ["Falha ao carregar as notícias mais recentes."]}
