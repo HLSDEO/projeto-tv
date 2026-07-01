@@ -10,6 +10,8 @@ from services.user_service import UserService, IUserService
 from services.media_service import MediaService, IMediaService
 from services.settings_service import SettingsService, ISettingsService
 from services.external_service import ExternalService, IExternalService
+from repositories.birthday_repository import APEXBirthdayRepository, IBirthdayRepository
+from services.birthday_service import BirthdayService, IBirthdayService
 
 def get_user_service(db: Session = Depends(get_db)) -> IUserService:
     repo = SQLAlchemyUserRepository(db)
@@ -30,3 +32,8 @@ def get_settings_service(db: Session = Depends(get_db)) -> ISettingsService:
 
 def get_external_service() -> IExternalService:
     return ExternalService()
+
+def get_birthday_service() -> IBirthdayService:
+    repo = APEXBirthdayRepository()
+    return BirthdayService(repo)
+

@@ -1,7 +1,7 @@
 import { Clock, Users, ShieldAlert, LayoutDashboard } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 
-export default function Header({ syncing, onSync, timeLeft, onLogout }) {
+export default function Header({ syncing, onSync, timeLeft, onLogout, onOpenBirthdays }) {
   const location = useLocation();
   const username = localStorage.getItem('username');
   const isAdmin = username === 'admin';
@@ -34,6 +34,14 @@ export default function Header({ syncing, onSync, timeLeft, onLogout }) {
           >
             Ver TV
           </button>
+          {onOpenBirthdays && (
+            <button 
+              onClick={onOpenBirthdays}
+              className="px-4 py-2 bg-zinc-750 hover:bg-zinc-650 rounded font-medium transition border border-zinc-700 text-white flex items-center gap-1.5 cursor-pointer"
+            >
+              🎂 Aniversariantes
+            </button>
+          )}
           <button 
             onClick={onLogout}
             className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded font-medium transition text-white"

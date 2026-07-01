@@ -148,8 +148,10 @@ async def login_for_access_token(
         "must_change_password": user.must_change_password
     }
 
-from routers import media, settings, news, admin
+from routers import media, settings, news, admin, birthdays
 app.include_router(media.router)
 app.include_router(settings.router)
 app.include_router(news.router)
 app.include_router(admin.router)
+app.include_router(birthdays.router)
+
