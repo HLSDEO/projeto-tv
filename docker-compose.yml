@@ -10,6 +10,8 @@ services:
       - SECRET_KEY=${SECRET_KEY}
       - UPLOAD_DIR=${UPLOAD_DIR}
       - PYTHONPATH=/app/app
+      - APEX_REST_URL=${APEX_REST_URL}
+
     networks:
       - tvdlog-network
     volumes:
