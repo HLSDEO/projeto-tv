@@ -26,6 +26,23 @@ export const adminService = {
   getAuditLogs: async () => {
     const response = await api.get('/api/admin/audit-logs');
     return response.data.logs;
+  },
+
+  getServerLogs: async (params = {}) => {
+    const response = await api.get('/api/admin/logs', { params });
+    return response.data.logs;
+  },
+
+  clearServerLogs: async () => {
+    const response = await api.delete('/api/admin/logs/clear');
+    return response.data;
+  },
+
+  downloadServerLogs: async () => {
+    const response = await api.get('/api/admin/logs/download', {
+      responseType: 'blob'
+    });
+    return response.data;
   }
 };
 

@@ -163,3 +163,100 @@ def list_audit_logs(
     except Exception as e:
         logger.error(f"Error listing audit logs: {e}")
         raise HTTPException(status_code=500, detail="Error listing audit logs")
+
+from fastapi.responses import FileResponse
+import os
+
+@router.get("/logs")
+def get_logs(
+    limit: int = 200,
+    level: str = None,
+    search: str = None,
+    username: str = Depends(get_current_user)
+):
+    """Get latest logs (admin only)"""
+    if username != 'admin':
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only admin can view logs"
+        )
+        
+    log_file = os.path.join(os.getenv("LOG_DIR", "logs"), "backend.log")
+    if not os.path.exists(log_file):
+        return {"logs": []}
+        
+    try:
+        # Read the log file lines
+        with open(log_file, "r", encoding="utf-8", errors="replace") as f:
+            lines = f.readlines()
+            
+        # Parse and filter lines
+        filtered_lines = []
+        for line in lines:
+            line_str = line.strip()
+            if not line_str:
+                continue
+                
+            # Filter by log level if requested (e.g. ERROR, WARNING, INFO)
+            if level and level != 'ALL':
+                # Level check (e.g. [ERROR] or [WARNING] in the line)
+                if f"[{level.upper()}]" not in line_str:
+                    continue
+                    
+            # Filter by search term
+            if search:
+                if search.lower() not in line_str.lower():
+                    continue
+                    
+            filtered_lines.append(line_str)
+            
+        # Get latest limit lines
+        latest_logs = filtered_lines[-limit:] if limit > 0 else filtered_lines
+        
+        return {"logs": latest_logs}
+    except Exception as e:
+        logger.error(f"Error reading logs: {e}")
+        raise HTTPException(status_code=500, detail="Error reading logs")
+
+@router.delete("/logs/clear")
+def clear_logs(username: str = Depends(get_current_user)):
+    """Clear (truncate) current log file (admin only)"""
+    if username != 'admin':
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only admin can clear logs"
+        )
+        
+    log_file = os.path.join(os.getenv("LOG_DIR", "logs"), "backend.log")
+    if not os.path.exists(log_file):
+        return {"status": "success", "message": "Log file does not exist"}
+        
+    try:
+        # Truncate the file
+        with open(log_file, "w", encoding="utf-8") as f:
+            f.truncate(0)
+        logger.info("Logs cleared by admin")
+        return {"status": "success", "message": "Logs cleared successfully"}
+    except Exception as e:
+        logger.error(f"Error clearing logs: {e}")
+        raise HTTPException(status_code=500, detail="Error clearing logs")
+
+@router.get("/logs/download")
+def download_logs(username: str = Depends(get_current_user)):
+    """Download full log file (admin only)"""
+    if username != 'admin':
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only admin can download logs"
+        )
+        
+    log_file = os.path.join(os.getenv("LOG_DIR", "logs"), "backend.log")
+    if not os.path.exists(log_file):
+        raise HTTPException(status_code=404, detail="Log file not found")
+        
+    return FileResponse(
+        path=log_file,
+        filename="backend.log",
+        media_type="text/plain"
+    )
+

@@ -5,12 +5,16 @@ import Login from './pages/Login';
 import UserManagement from './pages/UserManagement';
 import AuditLogs from './pages/AuditLogs';
 import ChangePassword from './pages/ChangePassword';
+import authService from './services/authService';
 
 const PrivateRoute = ({ children }) => {
   const token = localStorage.getItem('token');
   const mustChange = localStorage.getItem('must_change_password') === 'true';
 
-  if (!token) return <Navigate to="/login" />;
+  if (!token || authService.isTokenExpired(token)) {
+    authService.logout();
+    return <Navigate to="/login" />;
+  }
   if (mustChange) return <Navigate to="/change-password" />;
   return children;
 };
@@ -20,7 +24,10 @@ const AdminRoute = ({ children }) => {
   const username = localStorage.getItem('username');
   const mustChange = localStorage.getItem('must_change_password') === 'true';
 
-  if (!token) return <Navigate to="/login" />;
+  if (!token || authService.isTokenExpired(token)) {
+    authService.logout();
+    return <Navigate to="/login" />;
+  }
   if (mustChange) return <Navigate to="/change-password" />;
   if (username !== 'admin') return <Navigate to="/admin" />;
   return children;

@@ -50,7 +50,7 @@ class TestBirthdayService(unittest.TestCase):
         self.assertEqual(birthdays[3]["DT_NASCIMENTO"], "14/02/1992")
 
     @patch("repositories.birthday_repository.api_get")
-    @patch.dict(os.environ, {"APEX_REST_URL": "http://mock-apex/birthdays"})
+    @patch.object(APEXBirthdayRepository, 'base_url', 'http://mock-apex/birthdays')
     def test_apex_api_success(self, mock_get):
         """Test that APEXBirthdayRepository successfully makes HTTP request and parses ORDS JSON format"""
         # Mock Response
@@ -73,7 +73,7 @@ class TestBirthdayService(unittest.TestCase):
         self.assertEqual(result[1]["NO_PESSOA"], "ANA SILVA OLIVEIRA")
 
     @patch("repositories.birthday_repository.api_get")
-    @patch.dict(os.environ, {"APEX_REST_URL": "http://mock-apex/birthdays"})
+    @patch.object(APEXBirthdayRepository, 'base_url', 'http://mock-apex/birthdays')
     def test_apex_api_failure_fallback(self, mock_get):
         """Test that APEXBirthdayRepository falls back to mock data when HTTP request fails"""
         mock_get.side_effect = Exception("Connection Refused")

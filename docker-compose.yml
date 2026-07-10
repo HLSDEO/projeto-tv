@@ -11,6 +11,9 @@ services:
       - UPLOAD_DIR=${UPLOAD_DIR}
       - PYTHONPATH=/app/app
       - APEX_REST_URL=${APEX_REST_URL}
+      - LOG_DIR=${LOG_DIR}
+      - LOG_FILE=${LOG_FILE}
+      - LOG_LEVEL=${LOG_LEVEL}
 
     networks:
       - tvdlog-network

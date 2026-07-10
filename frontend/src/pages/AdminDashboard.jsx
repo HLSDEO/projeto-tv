@@ -41,6 +41,15 @@ export default function AdminDashboard() {
   const [intervalInput, setIntervalInput] = useState('15');
   const [timeLeft, setTimeLeft] = useState(0);
   const [syncing, setSyncing] = useState(false);
+  const [toasts, setToasts] = useState([]);
+
+  const showToast = (message, type = 'success') => {
+    const id = Date.now();
+    setToasts(prev => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+    }, 4000);
+  };
   
   // Birthday report states
   const [showBirthdayModal, setShowBirthdayModal] = useState(false);
@@ -214,9 +223,12 @@ export default function AdminDashboard() {
     const defaultDuration = isVideo ? 0 : 10;
     try {
       await mediaService.uploadMedia(file, defaultDuration);
-      fetchData();
+      await fetchData();
+      showToast('Mídia enviada com sucesso!', 'success');
+      await handleSyncTV(true); // silent sync to update TVs
     } catch (err) {
       console.error('Upload failed', err);
+      showToast('Falha ao enviar arquivo de mídia.', 'error');
     } finally {
       setUploading(false);
     }
@@ -226,9 +238,12 @@ export default function AdminDashboard() {
     if (!window.confirm('Tem certeza que deseja apagar?')) return;
     try {
       await mediaService.deleteMedia(id);
-      fetchData();
+      await fetchData();
+      showToast('Mídia excluída com sucesso!', 'success');
+      await handleSyncTV(true); // silent sync to update TVs
     } catch (err) {
       console.error('Delete failed', err);
+      showToast('Falha ao excluir mídia.', 'error');
     }
   };
 
@@ -242,9 +257,33 @@ export default function AdminDashboard() {
         updated.order,
         updated.scheduled_start ?? null
       );
-      fetchData();
+      await fetchData();
+      
+      // Determine what was updated to show a tailored message
+      if (updates.active !== undefined) {
+        showToast(updates.active ? 'Mídia ativada com sucesso!' : 'Mídia desativada com sucesso!', 'success');
+      } else if (updates.scheduled_start !== undefined) {
+        showToast(updates.scheduled_start ? 'Início agendado atualizado com sucesso!' : 'Agendamento removido!', 'success');
+      } else {
+        showToast('Mídia atualizada com sucesso!', 'success');
+      }
+      
+      await handleSyncTV(true); // silent sync to update TVs
     } catch (err) {
       console.error('Update failed', err);
+      showToast('Falha ao atualizar mídia.', 'error');
+    }
+  };
+
+  const handleReorder = async (orderedIds) => {
+    try {
+      await mediaService.reorderMedia(orderedIds);
+      await fetchData();
+      showToast('Nova ordem das mídias salva com sucesso!', 'success');
+      await handleSyncTV(true); // silent sync to update TVs
+    } catch (err) {
+      console.error('Reorder failed', err);
+      showToast('Erro ao salvar reordenação das mídias.', 'error');
     }
   };
 
@@ -253,16 +292,14 @@ export default function AdminDashboard() {
     try {
       await settingsService.triggerSync();
       if (!silent) {
-        alert('Sinal de sincronização enviado para todas as TVs com sucesso!');
+        showToast('Sinal de sincronização enviado para todas as TVs com sucesso!', 'success');
       }
       if (settings.sync_interval) {
         setTimeLeft(settings.sync_interval * 60);
       }
     } catch (err) {
       console.error('Failed to sync TV', err);
-      if (!silent) {
-        alert('Falha ao enviar sinal de sincronização.');
-      }
+      showToast('Falha ao enviar sinal de sincronização.', 'error');
     } finally {
       if (!silent) setSyncing(false);
     }
@@ -296,39 +333,42 @@ export default function AdminDashboard() {
         updatedSettings.clock_position || settings.clock_position || 'top-right',
         updatedSettings.news_position || settings.news_position || 'bottom'
       );
-      fetchData();
+      await fetchData();
+      showToast('Configurações atualizadas com sucesso!', 'success');
+      await handleSyncTV(true); // Notify TVs of settings changes
     } catch (err) {
       console.error('Settings update failed', err);
+      showToast('Falha ao atualizar configurações.', 'error');
     }
   };
 
   const handleCitySave = async () => {
     if (!cityInput.trim()) {
-      alert('Por favor, informe uma cidade válida.');
+      showToast('Por favor, informe uma cidade válida.', 'error');
       return;
     }
     await handleUpdateSettings({ ...settings, weather_city: cityInput });
-    alert('Cidade climática atualizada com sucesso!');
   };
 
   const handleIntervalSave = async () => {
     const val = parseInt(intervalInput);
     if (isNaN(val) || val < 1) {
-      alert('Por favor, informe um tempo de sincronização válido (mínimo 1 minuto).');
+      showToast('Por favor, informe um tempo de sincronização válido (mínimo 1 minuto).', 'error');
       return;
     }
     await handleUpdateSettings({ ...settings, sync_interval: val });
-    alert('Tempo de sincronização atualizado com sucesso!');
   };
 
   const handleLogoUpload = async (file) => {
     setUploadingLogo(true);
     try {
       await settingsService.uploadLogo(file);
-      fetchData();
+      await fetchData();
+      showToast('Logotipo atualizado com sucesso!', 'success');
+      await handleSyncTV(true); // Notify TVs
     } catch (err) {
       console.error('Logo upload failed', err);
-      alert(err.response?.data?.detail || 'Falha ao enviar logotipo.');
+      showToast(err.response?.data?.detail || 'Falha ao enviar logotipo.', 'error');
     } finally {
       setUploadingLogo(false);
     }
@@ -338,9 +378,12 @@ export default function AdminDashboard() {
     if (!window.confirm('Tem certeza que deseja remover o logotipo personalizado? A TV voltará a exibir o logotipo padrão.')) return;
     try {
       await settingsService.deleteLogo();
-      fetchData();
+      await fetchData();
+      showToast('Logotipo removido com sucesso!', 'success');
+      await handleSyncTV(true); // Notify TVs
     } catch (err) {
       console.error('Logo delete failed', err);
+      showToast('Falha ao remover logotipo.', 'error');
     }
   };
 
@@ -383,6 +426,7 @@ export default function AdminDashboard() {
           media={media}
           onUpdate={handleUpdateMedia}
           onDelete={handleDelete}
+          onReorder={handleReorder}
           baseURL={baseURL}
         />
       </div>
@@ -565,6 +609,33 @@ export default function AdminDashboard() {
           </div>
         </div>
       )}
+
+      {/* Toast notifications */}
+      <div className="fixed bottom-6 right-6 z-50 space-y-3 pointer-events-none">
+        {toasts.map((t) => (
+          <div
+            key={t.id}
+            className={`flex items-center gap-3 px-4 py-3 rounded-xl border shadow-2xl backdrop-blur-md transition-all duration-300 pointer-events-auto max-w-sm border-zinc-700/80 animate-fade-in ${
+              t.type === 'success'
+                ? 'bg-zinc-950/90 border-emerald-500/35 text-emerald-400'
+                : t.type === 'error'
+                ? 'bg-zinc-950/90 border-rose-500/35 text-rose-400'
+                : 'bg-zinc-950/90 border-blue-500/35 text-blue-400'
+            }`}
+          >
+            {t.type === 'success' && (
+              <span className="w-5 h-5 bg-emerald-500/10 rounded-full flex items-center justify-center shrink-0 border border-emerald-500/20 text-xs font-bold">✓</span>
+            )}
+            {t.type === 'error' && (
+              <span className="w-5 h-5 bg-rose-500/10 rounded-full flex items-center justify-center shrink-0 border border-rose-500/20 text-xs font-bold">⚠</span>
+            )}
+            {t.type === 'info' && (
+              <span className="w-5 h-5 bg-blue-500/10 rounded-full flex items-center justify-center shrink-0 border border-blue-500/20 text-xs font-bold">ℹ</span>
+            )}
+            <span className="text-sm font-semibold text-white select-none">{t.message}</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

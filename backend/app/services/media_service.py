@@ -25,6 +25,10 @@ class IMediaService(ABC):
     def delete_media(self, media_id: int) -> None:
         pass
 
+    @abstractmethod
+    def reorder_media(self, ids: List[int]) -> None:
+        pass
+
 
 class MediaService(IMediaService):
     def __init__(self, media_repo: IMediaRepository, upload_dir: str = "/app/uploads"):
@@ -75,6 +79,14 @@ class MediaService(IMediaService):
         self.media_repo.commit()
         self.media_repo.refresh(media)
         return media
+
+    def reorder_media(self, ids: List[int]) -> None:
+        for idx, media_id in enumerate(ids):
+            media = self.media_repo.get_by_id(media_id)
+            if not media:
+                raise KeyError(f"Media with ID {media_id} not found")
+            media.order = idx + 1
+        self.media_repo.commit()
 
     def delete_media(self, media_id: int) -> None:
         media = self.media_repo.get_by_id(media_id)
