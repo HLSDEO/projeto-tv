@@ -6,8 +6,15 @@ import os
 from datetime import timedelta
 from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv()
+# Load environment variables (look for centralized root .env first)
+root_env = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".env"))
+if os.path.exists(root_env):
+    load_dotenv(root_env)
+else:
+    load_dotenv()
+
+from core.logging_config import setup_logging
+setup_logging()
 
 
 from database import init_db, get_db
@@ -49,6 +56,35 @@ async def audit_context_middleware(request: Request, call_next):
     finally:
         clear_request_context()
 
+from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    if isinstance(exc, HTTPException):
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={"detail": exc.detail},
+            headers=exc.headers
+        )
+    if isinstance(exc, RequestValidationError):
+        return JSONResponse(
+            status_code=422,
+            content={"detail": exc.errors()}
+        )
+        
+    import logging
+    import traceback
+    logger = logging.getLogger("backend.errors")
+    tb_str = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
+    logger.error(
+        f"Unhandled exception during {request.method} {request.url.path}:\n{tb_str}"
+    )
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Erro interno do servidor. Consulte os logs."}
+    )
+
 # Serve uploaded files
 UPLOAD_DIR = os.getenv("UPLOAD_DIR", "uploads")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -77,6 +113,10 @@ async def startup_event():
         import logging
         logger = logging.getLogger(__name__)
         logger.error(f"❌ Alembic database migrations failed: {migration_error}")
+    finally:
+        # Re-apply our logging configuration because Alembic's fileConfig overrides it
+        from core.logging_config import setup_logging
+        setup_logging()
         
     init_db()
 
