@@ -32,6 +32,11 @@ export const mediaService = {
   deleteMedia: async (id) => {
     const response = await api.delete(`/api/media/${id}`);
     return response.data;
+  },
+
+  reorderMedia: async (ids) => {
+    const response = await api.put('/api/media/reorder', ids);
+    return response.data;
   }
 };
 
