@@ -14,6 +14,7 @@ class Media(Base, AuditMixin):
     active = Column(Boolean, default=True, index=True)
     order = Column(Integer, nullable=False)
     uploaded_at = Column(DateTime, default=datetime.utcnow)
+    scheduled_start = Column(DateTime, nullable=True)
     url = Column(String(500), nullable=False)
 
     __table_args__ = (
