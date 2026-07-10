@@ -10,9 +10,12 @@ from alembic import context
 config = context.config
 
 # Interpret the config file for Python logging.
-# This line sets up loggers basically.
+# Only call fileConfig if root logger has no handlers (i.e. running from CLI)
+# to avoid resetting the FastAPI app's active logging handlers.
 if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+    import logging
+    if not logging.getLogger().handlers:
+        fileConfig(config.config_file_name)
 
 import sys
 import os
@@ -22,8 +25,12 @@ from dotenv import load_dotenv
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../app')))
 
-# Load env variables from backend/.env if it exists
-load_dotenv(os.path.abspath(os.path.join(os.path.dirname(__file__), '../.env')))
+# Load env variables from centralized root .env if it exists
+root_env = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../.env'))
+if os.path.exists(root_env):
+    load_dotenv(root_env)
+else:
+    load_dotenv(os.path.abspath(os.path.join(os.path.dirname(__file__), '../.env')))
 
 from app.database import Base
 import app.models.user
