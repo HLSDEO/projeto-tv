@@ -33,13 +33,15 @@ MOCK_DATA = [
 ]
 
 class APEXBirthdayRepository(IBirthdayRepository):
+    base_url: Optional[str] = None
+
     def get_birthdays(
         self,
         month: Optional[int] = None,
         start_month: Optional[int] = None,
         end_month: Optional[int] = None
     ) -> List[Dict[str, Any]]:
-        url = os.getenv("APEX_REST_URL")
+        url = self.base_url or os.getenv("APEX_REST_URL")
         if not url:
             logger.warning("⚠️ APEX_REST_URL is not configured. Falling back to local mock data.")
             return self._get_mock_birthdays(month, start_month, end_month)
