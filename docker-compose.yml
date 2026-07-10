@@ -20,8 +20,11 @@ services:
       - OAUTH_CLIENT_ID=${OAUTH_CLIENT_ID}
       - OAUTH_CLIENT_SECRET=${OAUTH_CLIENT_SECRET}
       - OAUTH_TOKEN_URL=${OAUTH_TOKEN_URL}
-
-
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+      - "appsdev.pf.gov.br:10.2.137.17"
+      - "sistemas.dpf.gov.br:10.2.112.46"
+      - "appslite.pf.gov.br:10.2.134.12"
     networks:
       - tvdlog-network
     volumes:
