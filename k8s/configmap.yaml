@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tvdlog-config
+  namespace: default
+  labels:
+    app.kubernetes.io/name: tvdlog
+    app.kubernetes.io/part-of: tv-dlog-system
+data:
+  UPLOAD_DIR: "uploads"
+  LOG_DIR: "logs"
+  LOG_FILE: "backend.log"
+  LOG_LEVEL: "INFO"
+  AMBIENTE: "prod"
+  DEV_BASE_URL_APEX: "https://appsdev.pf.gov.br/ws_20260210101622/api"
+  PROD_BASE_URL_APEX: "https://appslite.pf.gov.br/projetosuds/api"
+  APEX_REST_URL: "https://appslite.pf.gov.br/projetosuds/api-servidor/aniversariante"
+  OAUTH_TOKEN_URL: "https://appslite.pf.gov.br/projetosuds/oauth/token"
+  POSTGRES_DB: "tvdlog"
+  VITE_API_URL: ""
+  BACKEND_HOST: "tvdlog-backend-service:8200"
+  DOCKER_ENV: "true"

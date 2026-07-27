@@ -1,0 +1,179 @@
+# ------------------------------------------------------------------------------
+# 1. POSTGRESQL DATABASE DEPLOYMENT
+# ------------------------------------------------------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tvdlog-bd
+  namespace: default
+  labels:
+    app.kubernetes.io/name: tvdlog
+    app.kubernetes.io/component: database
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tvdlog-bd
+  template:
+    metadata:
+      labels:
+        app: tvdlog-bd
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:15-alpine
+          ports:
+            - containerPort: 5432
+              name: postgres
+          envFrom:
+            - secretRef:
+                name: tvdlog-secret
+            - configMapRef:
+                name: tvdlog-config
+          volumeMounts:
+            - name: postgres-data
+              mountPath: /var/lib/postgresql/data
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          livenessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - tvdlog
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          readinessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - tvdlog
+            initialDelaySeconds: 5
+            periodSeconds: 5
+      volumes:
+        - name: postgres-data
+          persistentVolumeClaim:
+            claimName: tvdlog-postgres-pvc
+
+---
+# ------------------------------------------------------------------------------
+# 2. BACKEND API DEPLOYMENT (FastAPI)
+# ------------------------------------------------------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tvdlog-backend
+  namespace: default
+  labels:
+    app.kubernetes.io/name: tvdlog
+    app.kubernetes.io/component: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tvdlog-backend
+  template:
+    metadata:
+      labels:
+        app: tvdlog-backend
+    spec:
+      containers:
+        - name: backend
+          image: projeto-tv-backend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+              name: http
+          env:
+            - name: PYTHONPATH
+              value: "/app/app"
+          envFrom:
+            - configMapRef:
+                name: tvdlog-config
+            - secretRef:
+                name: tvdlog-secret
+          volumeMounts:
+            - name: uploads-volume
+              mountPath: /app/uploads
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /docs
+              port: 8000
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /docs
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+      volumes:
+        - name: uploads-volume
+          persistentVolumeClaim:
+            claimName: tvdlog-uploads-pvc
+
+---
+# ------------------------------------------------------------------------------
+# 3. FRONTEND DEPLOYMENT (React SPA)
+# ------------------------------------------------------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tvdlog-frontend
+  namespace: default
+  labels:
+    app.kubernetes.io/name: tvdlog
+    app.kubernetes.io/component: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tvdlog-frontend
+  template:
+    metadata:
+      labels:
+        app: tvdlog-frontend
+    spec:
+      containers:
+        - name: frontend
+          image: projeto-tv-frontend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3100
+              name: http
+          envFrom:
+            - configMapRef:
+                name: tvdlog-config
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          livenessProbe:
+            tcpSocket:
+              port: 3100
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 6
+          readinessProbe:
+            tcpSocket:
+              port: 3100
+            initialDelaySeconds: 20
+            periodSeconds: 5
+            failureThreshold: 6
