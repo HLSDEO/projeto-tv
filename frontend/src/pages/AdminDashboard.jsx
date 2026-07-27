@@ -235,7 +235,6 @@ export default function AdminDashboard() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Tem certeza que deseja apagar?')) return;
     try {
       await mediaService.deleteMedia(id);
       await fetchData();
@@ -375,7 +374,6 @@ export default function AdminDashboard() {
   };
 
   const handleLogoDelete = async () => {
-    if (!window.confirm('Tem certeza que deseja remover o logotipo personalizado? A TV voltará a exibir o logotipo padrão.')) return;
     try {
       await settingsService.deleteLogo();
       await fetchData();

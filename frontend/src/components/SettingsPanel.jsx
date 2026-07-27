@@ -1,5 +1,5 @@
-import { Upload, Trash2 } from 'lucide-react';
-import { useRef } from 'react';
+import { useState, useRef } from 'react';
+import { Upload, Trash2, Loader2 } from 'lucide-react';
 import { getAssetUrl } from '../services/api';
 
 export default function SettingsPanel({
@@ -16,26 +16,37 @@ export default function SettingsPanel({
   onIntervalSave
 }) {
   const logoInputRef = useRef(null);
+  const [pendingAction, setPendingAction] = useState(null); // 'news', 'weather', 'city', 'logoDelete', 'logoBlur', 'logoPosition', 'clockPosition', 'newsPosition', 'interval'
+
+  const runAction = async (actionName, fn) => {
+    if (pendingAction) return;
+    setPendingAction(actionName);
+    try {
+      await fn();
+    } finally {
+      setPendingAction(null);
+    }
+  };
 
   const toggleNews = () => {
-    onUpdateSettings({
+    runAction('news', () => onUpdateSettings({
       ...settings,
       news_enabled: !settings.news_enabled,
-    });
+    }));
   };
 
   const toggleWeather = () => {
-    onUpdateSettings({
+    runAction('weather', () => onUpdateSettings({
       ...settings,
       weather_enabled: !settings.weather_enabled,
-    });
+    }));
   };
 
   const toggleLogoBlur = () => {
-    onUpdateSettings({
+    runAction('logoBlur', () => onUpdateSettings({
       ...settings,
       logo_blur_enabled: !settings.logo_blur_enabled
-    });
+    }));
   };
 
   const handleLogoChange = (e) => {
@@ -45,6 +56,36 @@ export default function SettingsPanel({
       if (logoInputRef.current) logoInputRef.current.value = '';
     }
   };
+
+  const handleCitySave = () => {
+    runAction('city', () => onCitySave());
+  };
+
+  const handleIntervalSave = () => {
+    runAction('interval', () => onIntervalSave());
+  };
+
+  const handleLogoDelete = () => {
+    if (!window.confirm('Tem certeza que deseja remover o logotipo personalizado? A TV voltará a exibir o logotipo padrão.')) return;
+    runAction('logoDelete', () => onDeleteLogo());
+  };
+
+  const handleLogoPositionChange = (e) => {
+    const val = e.target.value;
+    runAction('logoPosition', () => onUpdateSettings({ ...settings, logo_position: val }));
+  };
+
+  const handleClockPositionChange = (e) => {
+    const val = e.target.value;
+    runAction('clockPosition', () => onUpdateSettings({ ...settings, clock_position: val }));
+  };
+
+  const handleNewsPositionChange = (e) => {
+    const val = e.target.value;
+    runAction('newsPosition', () => onUpdateSettings({ ...settings, news_position: val }));
+  };
+
+  const isPending = pendingAction !== null || uploadingLogo;
 
   return (
     <div className="bg-zinc-800 p-6 rounded-xl border border-zinc-700 space-y-6">
@@ -58,15 +99,18 @@ export default function SettingsPanel({
         </div>
         <button
           onClick={toggleNews}
-          className={`w-14 h-8 flex items-center rounded-full p-1 transition-colors ${
+          disabled={isPending}
+          className={`w-14 h-8 flex items-center rounded-full p-1 transition-colors disabled:opacity-50 cursor-pointer ${
             settings.news_enabled ? 'bg-green-500' : 'bg-zinc-600'
           }`}
         >
           <div
-            className={`bg-white w-6 h-6 rounded-full shadow-md transform transition-transform ${
+            className={`bg-white w-6 h-6 rounded-full shadow-md transform transition-transform flex items-center justify-center ${
               settings.news_enabled ? 'translate-x-6' : 'translate-x-0'
             }`}
-          />
+          >
+            {pendingAction === 'news' && <Loader2 className="w-3.5 h-3.5 animate-spin text-zinc-650" />}
+          </div>
         </button>
       </div>
 
@@ -79,15 +123,18 @@ export default function SettingsPanel({
           </div>
           <button
             onClick={toggleWeather}
-            className={`w-14 h-8 flex items-center rounded-full p-1 transition-colors ${
+            disabled={isPending}
+            className={`w-14 h-8 flex items-center rounded-full p-1 transition-colors disabled:opacity-50 cursor-pointer ${
               settings.weather_enabled ? 'bg-green-500' : 'bg-zinc-600'
             }`}
           >
             <div
-              className={`bg-white w-6 h-6 rounded-full shadow-md transform transition-transform ${
+              className={`bg-white w-6 h-6 rounded-full shadow-md transform transition-transform flex items-center justify-center ${
                 settings.weather_enabled ? 'translate-x-6' : 'translate-x-0'
               }`}
-            />
+            >
+              {pendingAction === 'weather' && <Loader2 className="w-3.5 h-3.5 animate-spin text-zinc-650" />}
+            </div>
           </button>
         </div>
         
@@ -100,14 +147,23 @@ export default function SettingsPanel({
                 value={cityInput}
                 onChange={(e) => setCityInput(e.target.value)}
                 placeholder="Ex: Brasília"
-                className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500"
+                disabled={isPending}
+                className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500 disabled:opacity-50"
               />
             </div>
             <button
-              onClick={onCitySave}
-              className="self-end px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded transition"
+              onClick={handleCitySave}
+              disabled={isPending}
+              className="self-end px-4 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-zinc-700 text-white text-sm font-semibold rounded transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
             >
-              Salvar
+              {pendingAction === 'city' ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Salvando...</span>
+                </>
+              ) : (
+                'Salvar'
+              )}
             </button>
           </div>
         )}
@@ -133,11 +189,16 @@ export default function SettingsPanel({
               <span className="text-sm text-zinc-400 font-medium truncate max-w-[180px]">Logo ativa</span>
             </div>
             <button
-              onClick={onDeleteLogo}
-              className="p-2 bg-red-600/10 hover:bg-red-600/20 text-red-500 rounded-lg border border-red-500/20 transition flex items-center gap-2 text-sm font-semibold"
+              onClick={handleLogoDelete}
+              disabled={isPending}
+              className="p-2 bg-red-600/10 hover:bg-red-600/20 text-red-500 rounded-lg border border-red-500/20 transition flex items-center gap-2 text-sm font-semibold cursor-pointer disabled:opacity-50"
               title="Excluir logotipo"
             >
-              <Trash2 className="w-4 h-4" />
+              {pendingAction === 'logoDelete' ? (
+                <Loader2 className="w-4 h-4 animate-spin text-red-500" />
+              ) : (
+                <Trash2 className="w-4 h-4" />
+              )}
               Remover
             </button>
           </div>
@@ -145,11 +206,20 @@ export default function SettingsPanel({
           <div>
             <button
               onClick={() => logoInputRef.current?.click()}
-              disabled={uploadingLogo}
-              className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-zinc-700 text-white rounded-lg font-medium transition flex items-center justify-center gap-2 border border-blue-500/30"
+              disabled={isPending}
+              className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-zinc-700 text-white rounded-lg font-medium transition flex items-center justify-center gap-2 border border-blue-500/30 cursor-pointer disabled:opacity-50"
             >
-              <Upload className="w-5 h-5" />
-              {uploadingLogo ? 'Enviando...' : 'Fazer Upload da Logo'}
+              {uploadingLogo ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span>Enviando...</span>
+                </>
+              ) : (
+                <>
+                  <Upload className="w-5 h-5" />
+                  <span>Fazer Upload da Logo</span>
+                </>
+              )}
             </button>
             <input
               type="file"
@@ -157,6 +227,7 @@ export default function SettingsPanel({
               className="hidden"
               accept="image/*"
               onChange={handleLogoChange}
+              disabled={isPending}
             />
           </div>
         )}
@@ -169,15 +240,18 @@ export default function SettingsPanel({
           </div>
           <button
             onClick={toggleLogoBlur}
-            className={`w-14 h-8 flex items-center rounded-full p-1 transition-colors ${
+            disabled={isPending}
+            className={`w-14 h-8 flex items-center rounded-full p-1 transition-colors disabled:opacity-50 cursor-pointer ${
               settings.logo_blur_enabled ? 'bg-green-500' : 'bg-zinc-600'
             }`}
           >
             <div
-              className={`bg-white w-6 h-6 rounded-full shadow-md transform transition-transform ${
+              className={`bg-white w-6 h-6 rounded-full shadow-md transform transition-transform flex items-center justify-center ${
                 settings.logo_blur_enabled ? 'translate-x-6' : 'translate-x-0'
               }`}
-            />
+            >
+              {pendingAction === 'logoBlur' && <Loader2 className="w-3.5 h-3.5 animate-spin text-zinc-650" />}
+            </div>
           </button>
         </div>
       </div>
@@ -193,44 +267,62 @@ export default function SettingsPanel({
           {/* Logo Position */}
           <div>
             <label className="block text-xs font-semibold text-zinc-400 mb-1">Posição do Logotipo</label>
-            <select
-              value={settings.logo_position || 'top-left'}
-              onChange={(e) => onUpdateSettings({ ...settings, logo_position: e.target.value })}
-              className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500"
-            >
-              <option value="top-left">Superior Esquerdo</option>
-              <option value="top-right">Superior Direito</option>
-              <option value="bottom-left">Inferior Esquerdo</option>
-              <option value="bottom-right">Inferior Direito</option>
-            </select>
+            <div className="relative">
+              <select
+                value={settings.logo_position || 'top-left'}
+                onChange={handleLogoPositionChange}
+                disabled={isPending}
+                className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500 disabled:opacity-50"
+              >
+                <option value="top-left">Superior Esquerdo</option>
+                <option value="top-right">Superior Direito</option>
+                <option value="bottom-left">Inferior Esquerdo</option>
+                <option value="bottom-right">Inferior Direito</option>
+              </select>
+              {pendingAction === 'logoPosition' && (
+                <Loader2 className="absolute right-8 top-2.5 w-4 h-4 animate-spin text-blue-500" />
+              )}
+            </div>
           </div>
 
           {/* Clock Position */}
           <div>
             <label className="block text-xs font-semibold text-zinc-400 mb-1">Posição do Relógio</label>
-            <select
-              value={settings.clock_position || 'top-right'}
-              onChange={(e) => onUpdateSettings({ ...settings, clock_position: e.target.value })}
-              className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500"
-            >
-              <option value="top-left">Superior Esquerdo</option>
-              <option value="top-right">Superior Direito</option>
-              <option value="bottom-left">Inferior Esquerdo</option>
-              <option value="bottom-right">Inferior Direito</option>
-            </select>
+            <div className="relative">
+              <select
+                value={settings.clock_position || 'top-right'}
+                onChange={handleClockPositionChange}
+                disabled={isPending}
+                className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500 disabled:opacity-50"
+              >
+                <option value="top-left">Superior Esquerdo</option>
+                <option value="top-right">Superior Direito</option>
+                <option value="bottom-left">Inferior Esquerdo</option>
+                <option value="bottom-right">Inferior Direito</option>
+              </select>
+              {pendingAction === 'clockPosition' && (
+                <Loader2 className="absolute right-8 top-2.5 w-4 h-4 animate-spin text-blue-500" />
+              )}
+            </div>
           </div>
 
           {/* News Position */}
           <div>
             <label className="block text-xs font-semibold text-zinc-400 mb-1">Posição da Barra de Notícias</label>
-            <select
-              value={settings.news_position || 'bottom'}
-              onChange={(e) => onUpdateSettings({ ...settings, news_position: e.target.value })}
-              className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500"
-            >
-              <option value="top">Superior (Topo)</option>
-              <option value="bottom">Inferior (Rodapé)</option>
-            </select>
+            <div className="relative">
+              <select
+                value={settings.news_position || 'bottom'}
+                onChange={handleNewsPositionChange}
+                disabled={isPending}
+                className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500 disabled:opacity-50"
+              >
+                <option value="top">Superior (Topo)</option>
+                <option value="bottom">Inferior (Rodapé)</option>
+              </select>
+              {pendingAction === 'newsPosition' && (
+                <Loader2 className="absolute right-8 top-2.5 w-4 h-4 animate-spin text-blue-500" />
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -250,14 +342,23 @@ export default function SettingsPanel({
               onChange={(e) => setIntervalInput(e.target.value)}
               placeholder="Ex: 15"
               min="1"
-              className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500"
+              disabled={isPending}
+              className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500 disabled:opacity-50"
             />
           </div>
           <button
-            onClick={onIntervalSave}
-            className="self-end px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded transition"
+            onClick={handleIntervalSave}
+            disabled={isPending}
+            className="self-end px-4 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-zinc-700 text-white text-sm font-semibold rounded transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
           >
-            Salvar
+            {pendingAction === 'interval' ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Salvando...</span>
+              </>
+            ) : (
+              'Salvar'
+            )}
           </button>
         </div>
       </div>

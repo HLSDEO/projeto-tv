@@ -9,6 +9,7 @@ COPY package*.json ./
 
 RUN npm install
 
+ARG BUILD_DATE=unknown
 COPY . .
 
 # Expose port 3100 for Vite dev server

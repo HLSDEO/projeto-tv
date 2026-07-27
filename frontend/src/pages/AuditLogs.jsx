@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import adminService from '../services/adminService';
 import authService from '../services/authService';
 import Header from '../components/Header';
-import { RefreshCw, Search, Calendar, ShieldAlert, Download, Trash2, Copy, Terminal, ArrowDown } from 'lucide-react';
+import { RefreshCw, Search, Calendar, ShieldAlert, Download, Trash2, Copy, Terminal, ArrowDown, Loader2 } from 'lucide-react';
 
 export default function AuditLogs() {
   const [activeTab, setActiveTab] = useState('audit'); // 'audit' or 'server'
@@ -170,20 +170,29 @@ export default function AuditLogs() {
     }
   }, [serverLogs, activeTab, autoScroll]);
 
+  const [clearingLogs, setClearingLogs] = useState(false);
+  const [downloadingLogs, setDownloadingLogs] = useState(false);
+
   const handleClearServerLogs = async () => {
+    if (clearingLogs) return;
     if (!window.confirm('Tem certeza de que deseja apagar todos os logs do servidor? Essa ação não pode ser desfeita.')) {
       return;
     }
+    setClearingLogs(true);
     try {
       await adminService.clearServerLogs();
       setServerLogs([]);
       alert('Logs apagados com sucesso!');
     } catch (err) {
       alert('Falha ao apagar logs do servidor.');
+    } finally {
+      setClearingLogs(false);
     }
   };
 
   const handleDownloadServerLogs = async () => {
+    if (downloadingLogs) return;
+    setDownloadingLogs(true);
     try {
       const blobData = await adminService.downloadServerLogs();
       const url = window.URL.createObjectURL(new Blob([blobData]));
@@ -195,6 +204,8 @@ export default function AuditLogs() {
       link.parentNode.removeChild(link);
     } catch (err) {
       alert('Falha ao baixar arquivo de logs.');
+    } finally {
+      setDownloadingLogs(false);
     }
   };
 
@@ -419,7 +430,7 @@ export default function AuditLogs() {
                 <div className="flex flex-wrap gap-2">
                   <button
                     onClick={handleCopyServerLogs}
-                    disabled={serverLogs.length === 0}
+                    disabled={serverLogs.length === 0 || clearingLogs || downloadingLogs}
                     className="px-3 py-2 bg-zinc-700 hover:bg-zinc-650 disabled:opacity-50 text-white rounded-lg text-sm font-semibold transition flex items-center gap-1.5 cursor-pointer"
                     title="Copiar para a área de transferência"
                   >
@@ -428,23 +439,42 @@ export default function AuditLogs() {
                   </button>
                   <button
                     onClick={handleDownloadServerLogs}
-                    disabled={serverLogs.length === 0}
-                    className="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-lg text-sm font-semibold transition flex items-center gap-1.5 cursor-pointer"
+                    disabled={serverLogs.length === 0 || clearingLogs || downloadingLogs}
+                    className="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-lg text-sm font-semibold transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                   >
-                    <Download className="w-4 h-4" />
-                    Baixar Completo
+                    {downloadingLogs ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Baixando...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Download className="w-4 h-4" />
+                        <span>Baixar Completo</span>
+                      </>
+                    )}
                   </button>
                   <button
                     onClick={handleClearServerLogs}
-                    className="px-3 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-sm font-semibold transition flex items-center gap-1.5 cursor-pointer"
+                    disabled={clearingLogs || downloadingLogs}
+                    className="px-3 py-2 bg-rose-600 hover:bg-rose-700 disabled:bg-zinc-700 text-white rounded-lg text-sm font-semibold transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                   >
-                    <Trash2 className="w-4 h-4" />
-                    Limpar Logs
+                    {clearingLogs ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Limpando...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 className="w-4 h-4" />
+                        <span>Limpar Logs</span>
+                      </>
+                    )}
                   </button>
                   <button
                     onClick={() => fetchServerLogs(false)}
-                    disabled={serverLoading}
-                    className="px-3 py-2 bg-zinc-700 hover:bg-zinc-650 disabled:bg-zinc-800 border border-zinc-650 rounded-lg text-sm font-semibold transition flex items-center gap-1.5 cursor-pointer"
+                    disabled={serverLoading || clearingLogs || downloadingLogs}
+                    className="px-3 py-2 bg-zinc-700 hover:bg-zinc-650 disabled:bg-zinc-800 border border-zinc-650 rounded-lg text-sm font-semibold transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                   >
                     <RefreshCw className={`w-4 h-4 text-blue-400 ${serverLoading ? 'animate-spin' : ''}`} />
                     Atualizar

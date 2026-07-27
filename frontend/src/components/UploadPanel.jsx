@@ -4,11 +4,32 @@ import { Upload } from 'lucide-react';
 export default function UploadPanel({ onUpload, uploading }) {
   const fileInputRef = useRef(null);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+
+  const validateAndUpload = (file) => {
+    setErrorMsg('');
+    if (!file) return;
+
+    const isVideo = file.type.startsWith('video/') || /\.(mp4|webm|ogg|mov|mkv)$/i.test(file.name);
+    const maxVideoBytes = 100 * 1024 * 1024;
+    const maxImageBytes = 15 * 1024 * 1024;
+
+    if (isVideo && file.size > maxVideoBytes) {
+      setErrorMsg(`O vídeo "${file.name}" excede o limite máximo de 100 MB (${(file.size / (1024 * 1024)).toFixed(1)} MB).`);
+      return;
+    }
+    if (!isVideo && file.size > maxImageBytes) {
+      setErrorMsg(`A imagem "${file.name}" excede o limite máximo de 15 MB (${(file.size / (1024 * 1024)).toFixed(1)} MB).`);
+      return;
+    }
+
+    onUpload(file);
+  };
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      onUpload(file);
+      validateAndUpload(file);
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
@@ -27,7 +48,7 @@ export default function UploadPanel({ onUpload, uploading }) {
     setIsDragOver(false);
     const file = e.dataTransfer.files[0];
     if (file) {
-      onUpload(file);
+      validateAndUpload(file);
     }
   };
 
@@ -49,7 +70,7 @@ export default function UploadPanel({ onUpload, uploading }) {
           isDragOver ? 'text-blue-400 scale-110' : 'text-zinc-400'
         }`} />
         <p className="text-zinc-300 font-medium">Arrastar arquivo ou clique para fazer upload</p>
-        <p className="text-sm text-zinc-550 mt-2">Suporta Imagens e Vídeos (mp4, webm)</p>
+        <p className="text-sm text-zinc-550 mt-2">Suporta Imagens (até 15 MB) e Vídeos (mp4, webm - até 100 MB)</p>
         <input
           type="file"
           ref={fileInputRef}
@@ -59,7 +80,13 @@ export default function UploadPanel({ onUpload, uploading }) {
           disabled={uploading}
         />
       </div>
+      {errorMsg && (
+        <div className="mt-4 p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-lg text-center">
+          {errorMsg}
+        </div>
+      )}
       {uploading && <p className="text-blue-400 mt-4 text-center animate-pulse">Enviando arquivo...</p>}
     </div>
   );
 }
+

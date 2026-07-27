@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import adminService from '../services/adminService';
 import authService from '../services/authService';
 import Header from '../components/Header';
-import { UserPlus, Trash2, KeyRound, AlertTriangle } from 'lucide-react';
+import { UserPlus, Trash2, KeyRound, AlertTriangle, Loader2 } from 'lucide-react';
 
 const getErrorMessage = (err, defaultMsg) => {
   const detail = err.response?.data?.detail;
@@ -24,6 +24,12 @@ export default function UserManagement() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [modalError, setModalError] = useState('');
+  
+  // Loading states
+  const [isCreating, setIsCreating] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
+  const [deletingUser, setDeletingUser] = useState(null); // stores username being deleted
+
   const navigate = useNavigate();
 
   const fetchUsers = useCallback(async () => {
@@ -46,6 +52,7 @@ export default function UserManagement() {
 
   const handleCreateUser = async (e) => {
     e.preventDefault();
+    if (isCreating) return;
     setError('');
     setSuccess('');
 
@@ -59,18 +66,22 @@ export default function UserManagement() {
       return;
     }
 
+    setIsCreating(true);
     try {
       await adminService.createUser(usernameInput.trim(), passwordInput);
       setSuccess(`Usuário '${usernameInput}' criado com sucesso!`);
       setUsernameInput('');
       setPasswordInput('');
-      fetchUsers();
+      await fetchUsers();
     } catch (err) {
       setError(getErrorMessage(err, 'Erro ao criar usuário.'));
+    } finally {
+      setIsCreating(false);
     }
   };
 
   const handleDeleteUser = async (usernameToDelete) => {
+    if (deletingUser) return;
     setError('');
     setSuccess('');
 
@@ -83,17 +94,21 @@ export default function UserManagement() {
       return;
     }
 
+    setDeletingUser(usernameToDelete);
     try {
       await adminService.deleteUser(usernameToDelete);
       setSuccess(`Usuário '${usernameToDelete}' excluído com sucesso.`);
-      fetchUsers();
+      await fetchUsers();
     } catch (err) {
       setError(getErrorMessage(err, 'Erro ao excluir usuário.'));
+    } finally {
+      setDeletingUser(null);
     }
   };
 
   const handleResetPassword = async (e) => {
     e.preventDefault();
+    if (isResetting) return;
     setError('');
     setSuccess('');
     setModalError('');
@@ -103,6 +118,7 @@ export default function UserManagement() {
       return;
     }
 
+    setIsResetting(true);
     try {
       await adminService.resetPassword(resettingUser, newPasswordInput);
       setSuccess(`Senha do usuário '${resettingUser}' redefinida com sucesso!`);
@@ -110,6 +126,8 @@ export default function UserManagement() {
       setNewPasswordInput('');
     } catch (err) {
       setModalError(getErrorMessage(err, 'Erro ao redefinir senha.'));
+    } finally {
+      setIsResetting(false);
     }
   };
 
@@ -132,13 +150,13 @@ export default function UserManagement() {
             </h2>
 
             {error && (
-              <div className="p-3 bg-red-600/10 border border-red-500/20 text-red-400 rounded-lg text-sm">
+              <div className="p-3 bg-red-600/10 border border-red-500/20 text-red-400 rounded-lg text-sm animate-fade-in">
                 {error}
               </div>
             )}
 
             {success && (
-              <div className="p-3 bg-green-600/10 border border-green-500/20 text-green-400 rounded-lg text-sm">
+              <div className="p-3 bg-green-600/10 border border-green-500/20 text-green-400 rounded-lg text-sm animate-fade-in">
                 {success}
               </div>
             )}
@@ -151,7 +169,8 @@ export default function UserManagement() {
                   value={usernameInput}
                   onChange={(e) => setUsernameInput(e.target.value)}
                   placeholder="Mínimo 3 caracteres"
-                  className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2 text-white text-sm focus:outline-none focus:border-blue-500"
+                  disabled={isCreating}
+                  className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2 text-white text-sm focus:outline-none focus:border-blue-500 disabled:opacity-50"
                   required
                 />
               </div>
@@ -163,16 +182,28 @@ export default function UserManagement() {
                   value={passwordInput}
                   onChange={(e) => setPasswordInput(e.target.value)}
                   placeholder="Mínimo 6 caracteres"
-                  className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2 text-white text-sm focus:outline-none focus:border-blue-500"
+                  disabled={isCreating}
+                  className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2 text-white text-sm focus:outline-none focus:border-blue-500 disabled:opacity-50"
                   required
                 />
               </div>
 
               <button
                 type="submit"
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 px-4 rounded-lg transition text-sm flex items-center justify-center gap-2"
+                disabled={isCreating}
+                className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-zinc-700 text-white font-semibold py-2.5 px-4 rounded-lg transition text-sm flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
               >
-                Cadastrar Usuário
+                {isCreating ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Cadastrando...</span>
+                  </>
+                ) : (
+                  <>
+                    <UserPlus className="w-4 h-4" />
+                    <span>Cadastrar Usuário</span>
+                  </>
+                )}
               </button>
             </form>
           </div>
@@ -209,7 +240,8 @@ export default function UserManagement() {
                             setResettingUser(u.username);
                             setModalError('');
                           }}
-                          className="p-1.5 bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 border border-blue-500/10 hover:border-blue-500/30 rounded transition flex items-center gap-1 text-xs font-medium"
+                          disabled={deletingUser !== null || isResetting}
+                          className="p-1.5 bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 border border-blue-500/10 hover:border-blue-500/30 rounded transition flex items-center gap-1 text-xs font-medium cursor-pointer disabled:opacity-50"
                           title="Alterar Senha"
                         >
                           <KeyRound className="w-3.5 h-3.5" />
@@ -218,10 +250,15 @@ export default function UserManagement() {
                         {u.username !== 'admin' && (
                           <button
                             onClick={() => handleDeleteUser(u.username)}
-                            className="p-1.5 bg-red-600/10 hover:bg-red-600/20 text-red-400 border border-red-500/10 hover:border-red-500/30 rounded transition flex items-center gap-1 text-xs font-medium"
+                            disabled={deletingUser !== null || isResetting}
+                            className="p-1.5 bg-red-600/10 hover:bg-red-600/20 text-red-400 border border-red-500/10 hover:border-red-500/30 rounded transition flex items-center gap-1 text-xs font-medium cursor-pointer disabled:opacity-50"
                             title="Excluir Usuário"
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
+                            {deletingUser === u.username ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <Trash2 className="w-3.5 h-3.5" />
+                            )}
                             Excluir
                           </button>
                         )}
@@ -267,7 +304,8 @@ export default function UserManagement() {
                   value={newPasswordInput}
                   onChange={(e) => setNewPasswordInput(e.target.value)}
                   placeholder="Mínimo 6 caracteres"
-                  className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2 text-white text-sm focus:outline-none focus:border-blue-500"
+                  disabled={isResetting}
+                  className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2 text-white text-sm focus:outline-none focus:border-blue-500 disabled:opacity-50"
                   required
                   autoFocus
                 />
@@ -281,14 +319,17 @@ export default function UserManagement() {
                     setNewPasswordInput('');
                     setModalError('');
                   }}
-                  className="px-4 py-2 bg-zinc-700 hover:bg-zinc-650 rounded-lg text-sm font-semibold transition"
+                  disabled={isResetting}
+                  className="px-4 py-2 bg-zinc-700 hover:bg-zinc-650 rounded-lg text-sm font-semibold transition cursor-pointer disabled:opacity-50"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-semibold transition text-white"
+                  disabled={isResetting}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-zinc-700 rounded-lg text-sm font-semibold transition text-white flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                 >
+                  {isResetting && <Loader2 className="w-4 h-4 animate-spin" />}
                   Confirmar
                 </button>
               </div>

@@ -14,6 +14,12 @@ export const getWebSocketUrl = (path = '/ws') => {
   return `${protocol}//${host}${path}`;
 };
 
+let activeRequests = 0;
+
+const updateLoadingState = (loading) => {
+  window.dispatchEvent(new CustomEvent('global-api-loading', { detail: loading }));
+};
+
 const api = axios.create({
   baseURL: normalizedBaseURL || '/',
 });
@@ -23,12 +29,26 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  activeRequests++;
+  if (activeRequests === 1) {
+    updateLoadingState(true);
+  }
   return config;
 });
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    activeRequests = Math.max(0, activeRequests - 1);
+    if (activeRequests === 0) {
+      updateLoadingState(false);
+    }
+    return response;
+  },
   (error) => {
+    activeRequests = Math.max(0, activeRequests - 1);
+    if (activeRequests === 0) {
+      updateLoadingState(false);
+    }
     if (error.response && error.response.status === 401) {
       localStorage.removeItem('token');
       localStorage.removeItem('username');
@@ -41,4 +61,4 @@ api.interceptors.response.use(
   }
 );
 
-export default api;
+export default api; 
