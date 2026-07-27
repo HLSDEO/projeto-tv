@@ -19,6 +19,8 @@ class MediaResponse(BaseModel):
     uploaded_at: datetime
     scheduled_start: Optional[datetime] = None
     url: str
+    thumbnail_url: Optional[str] = None
+    compressed_url: Optional[str] = None
 
     class Config:
         from_attributes = True

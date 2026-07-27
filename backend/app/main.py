@@ -85,10 +85,18 @@ async def global_exception_handler(request: Request, exc: Exception):
         content={"detail": "Erro interno do servidor. Consulte os logs."}
     )
 
-# Serve uploaded files
+# Custom StaticFiles class to inject immutable Cache-Control headers
+class CachedStaticFiles(StaticFiles):
+    async def get_response(self, path: str, scope):
+        response = await super().get_response(path, scope)
+        if response.status_code == 200:
+            response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+        return response
+
+# Serve uploaded files with cache headers
 UPLOAD_DIR = os.getenv("UPLOAD_DIR", "uploads")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
-app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
+app.mount("/uploads", CachedStaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 
 # Initialize database and apply migrations on startup

@@ -28,6 +28,9 @@ async def upload_media(
         media = media_service.upload_media(file, duration)
         logger.info("✅ Media uploaded successfully: ID=%d, filename=%s, original_name=%s", media.id, media.filename, media.original_name)
         return media
+    except ValueError as e:
+        logger.warning("⚠️ Media file size limit exceeded for %s: %s", file.filename, e)
+        raise HTTPException(status_code=413, detail=str(e))
     except Exception as e:
         logger.error("❌ Failed to upload media %s: %s", file.filename, e)
         raise HTTPException(status_code=500, detail=f"Erro ao fazer upload da mídia: {e}")

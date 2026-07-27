@@ -63,6 +63,12 @@ def init_db():
             conn.execute(text(
                 "ALTER TABLE media ADD COLUMN IF NOT EXISTS scheduled_start TIMESTAMP"
             ))
+            conn.execute(text(
+                "ALTER TABLE media ADD COLUMN IF NOT EXISTS thumbnail_url VARCHAR(500)"
+            ))
+            conn.execute(text(
+                "ALTER TABLE media ADD COLUMN IF NOT EXISTS compressed_url VARCHAR(500)"
+            ))
         logger.info("✅ Database migrations applied")
 
         # Create default admin user
