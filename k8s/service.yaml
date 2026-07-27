@@ -1,0 +1,63 @@
+# ------------------------------------------------------------------------------
+# 1. SERVIÇO DO BANCO DE DADOS (ClusterIP - Apenas Comunicação Interna)
+# ------------------------------------------------------------------------------
+apiVersion: v1
+kind: Service
+metadata:
+  name: tvdlog-bd-service
+  namespace: default
+  labels:
+    app.kubernetes.io/name: tvdlog
+    app.kubernetes.io/component: database
+spec:
+  type: ClusterIP
+  ports:
+    - port: 5432
+      targetPort: 5432
+      name: postgres
+  selector:
+    app: tvdlog-bd
+
+---
+# ------------------------------------------------------------------------------
+# 2. SERVIÇO DO BACKEND (LoadBalancer no K3s ServiceLB - Expõe a API na porta 8200)
+# No K3s, type: LoadBalancer liga a porta 8200 diretamente no IP do host (10.61.140.21)
+# ------------------------------------------------------------------------------
+apiVersion: v1
+kind: Service
+metadata:
+  name: tvdlog-backend-service
+  namespace: default
+  labels:
+    app.kubernetes.io/name: tvdlog
+    app.kubernetes.io/component: backend
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 8200
+      targetPort: 8000
+      name: http-api
+  selector:
+    app: tvdlog-backend
+
+---
+# ------------------------------------------------------------------------------
+# 3. SERVIÇO DO FRONTEND (LoadBalancer no K3s ServiceLB - Expõe a Web na porta 3100)
+# Permite acesso direto pela intranet em http://10.61.140.21:3100/ sem restrição de porta NodePort.
+# ------------------------------------------------------------------------------
+apiVersion: v1
+kind: Service
+metadata:
+  name: tvdlog-frontend-service
+  namespace: default
+  labels:
+    app.kubernetes.io/name: tvdlog
+    app.kubernetes.io/component: frontend
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 3100
+      targetPort: 3100
+      name: http-web
+  selector:
+    app: tvdlog-frontend

@@ -1,15 +1,19 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Loader2 } from 'lucide-react';
 import authService from '../services/authService';
 
 export default function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    setLoading(true);
+    setError('');
     try {
       const data = await authService.login(username, password);
       if (data.must_change_password) {
@@ -19,6 +23,8 @@ export default function Login() {
       }
     } catch {
       setError('Credenciais inválidas');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -40,8 +46,9 @@ export default function Login() {
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full bg-zinc-900 border border-zinc-700 rounded px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+              className="w-full bg-zinc-900 border border-zinc-700 rounded px-4 py-2 text-white focus:outline-none focus:border-blue-500 disabled:opacity-50"
               required
+              disabled={loading}
             />
           </div>
           <div>
@@ -50,18 +57,28 @@ export default function Login() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-zinc-900 border border-zinc-700 rounded px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+              className="w-full bg-zinc-900 border border-zinc-700 rounded px-4 py-2 text-white focus:outline-none focus:border-blue-500 disabled:opacity-50"
               required
+              disabled={loading}
             />
           </div>
           <button
             type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition-colors"
+            disabled={loading}
+            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-zinc-700 text-white font-bold py-2 px-4 rounded transition-colors flex items-center justify-center gap-2 cursor-pointer"
           >
-            Entrar
+            {loading ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                <span>Entrando...</span>
+              </>
+            ) : (
+              'Entrar'
+            )}
           </button>
         </form>
       </div>
     </div>
   );
 }
+  

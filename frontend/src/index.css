@@ -39,3 +39,16 @@
     transform: translate3d(-100%, 0, 0);
   }
 }
+
+@keyframes loading-progress {
+  0% { left: -40%; right: 100%; }
+  50% { left: 0%; right: 40%; }
+  100% { left: 100%; right: -40%; }
+}
+
+.animate-loading-bar {
+  position: absolute;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, #3b82f6, #6366f1, #8b5cf6, transparent);
+  animation: loading-progress 1.5s infinite ease-in-out;
+}

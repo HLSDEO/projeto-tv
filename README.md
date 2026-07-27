@@ -1,221 +1,216 @@
-# PROJETO TV - Sistema de Sinalização Digital e Exibição de TV
+# TV DLOG - Sistema de Sinalização Digital (Digital Signage)
 
-Uma aplicação web completa para gerenciar e exibir conteúdo de mídia em telas de TV com funcionalidade integrada de notícias em tempo real. Perfeita para sinalização digital, painéis informativos e vitrines de mídia em escritórios, aeroportos e espaços públicos.
+O **TV DLOG** é uma solução corporativa robusta de Sinalização Digital (*Digital Signage*) desenvolvida para gerenciamento e exibição contínua de conteúdos multimídia em telas e televisores. O sistema combina uma arquitetura moderna baseada em microserviços/containers, painel de controle administrativo intuitivo, sincronização via WebSockets em tempo real e integração com serviços de previsão do tempo e feeds de notícias.
 
-## ✨ Features
+---
 
-- **📺 Media Carousel**: Exiba imagens e vídeos em rotação automática na interface de TV em tela cheia.
-- **🎛️ Admin Dashboard**: Interface amigável para carregar mídias, gerenciar a ordem de exibição e definir a duração das exibições.
-- **📰 News Ticker**: Notícias em tempo real exibindo manchetes do feed RSS da G1 Globo.
-- **⏱️ Dynamic Scheduling**: Tempo de exibição configurável para cada item de mídia.
-- **🗓️ Scheduled Start**: Defina uma data e hora de início futuras para cada item de mídia — ele permanece na lista de reprodução, mas só aparece na TV quando esse momento chegar (vazio = exibido imediatamente).
-- **🕐 Live Clock**: Exibição do relógio em tempo real no canto superior direito da tela da TV.
-- **📱 Responsive Design**: Interface otimizada para tela cheia em televisores.
+## 📑 Sumário
 
-## 🏗️ Infraestrutura / Stack
+- [Visão Geral e Funcionalidades](#-visão-geral-e-funcionalidades)
+- [Arquitetura e Tecnologias](#-arquitetura-e-tecnologias)
+- [Estrutura de Infraestrutura Kubernetes (k8s)](#-estrutura-de-infraestrutura-kubernetes-k8s)
+- [Guias de Implantação e Execução](#-guias-de-implantação-e-execução)
+  - [1. Implantação via Kubernetes (K3s / Cluster)](#1-implantação-via-kubernetes-k3s--cluster)
+  - [2. Implantação via Docker Compose](#2-implantação-via-docker-compose)
+  - [3. Execução em Ambiente de Desenvolvimento Local](#3-execução-em-ambiente-de-desenvolvimento-local)
+- [Estrutura do Repositório](#-estrutura-do-repositório)
+- [Procedimentos de Backup e Restauração](#-procedimentos-de-backup-e-restauração)
+- [Credenciais Padrão e Acessos](#-credenciais-padrão-e-acessos)
+
+---
+
+## ✨ Visão Geral e Funcionalidades
+
+- **📺 Carrossel de Mídias Inteligente**: Suporte à reprodução contínua de imagens e vídeos com suporte a duração configurável e controle automático de término (*onEnded*).
+- **🎛️ Painel Administrativo Centralizado**: Gerenciamento de playlists, upload de arquivos, reordenação de conteúdos e alteração de parâmetros do sistema.
+- **⚡ Sincronização em Tempo Real (WebSockets)**: Atualização instantânea dos displays de TV assim que alterações são efetuadas no painel de administração, sem necessidade de recarregar a página.
+- **📰 Letreiro de Notícias Dinâmico (RSS Feed)**: Exibição de manchetes atualizadas em tempo real via integração com feed RSS.
+- **🗓️ Agendamento Temporizado de Mídias**: Programação de data e hora para início de exibição de conteúdos na playlist.
+- **🌤️ Informações de Clima e Relógio Integrados**: Exibição de relógio digital em tempo real e previsão do tempo configurável para a localidade.
+
+---
+
+## 🏗️ Arquitetura e Tecnologias
 
 ### Backend
-- **FastAPI**
-- **PostgreSQL**
-- **SQLAlchemy**
-- **Uvicorn**
+- **FastAPI**: Framework assíncrono de alto desempenho em Python.
+- **PostgreSQL 15**: Banco de dados relacional para persistência de dados.
+- **SQLAlchemy & Pydantic**: ORM e validação de contratos de dados (DTOs).
+- **WebSockets & Uvicorn**: Comunicação bidirecional em tempo real e servidor ASGI.
 
 ### Frontend
-- **React 19**
-- **Vite**
-- **Tailwind CSS**
-- **React Router**
-- **Axios**
+- **React 19 & Vite**: Interface de usuário reativa de alta performance.
+- **Tailwind CSS**: Estilização moderna e responsiva.
+- **Axios & React Router**: Consumo de API REST e roteamento de páginas.
 
-## 🚀 Início rápido
+### Infraestrutura e Orquestração
+- **Kubernetes (K3s / Standard K8s)**: Manifestos YAML estruturados para alta disponibilidade e persistência.
+- **Docker & Docker Compose**: Containerização e orquestração para ambientes locais e de desenvolvimento.
 
-### Pré-requisitos
-- Docker instalados em seu sistema (se windows Docker Desktop).
+---
 
-1. **Clona ou baixa o repositório**
+## 📦 Estrutura de Infraestrutura Kubernetes (k8s)
+
+A aplicação conta com um conjunto completo de manifestos Kubernetes localizados no diretório [`k8s/`](file:///c:/Users/Admin/Documentos/TV-DLOG/projeto-tv/k8s), preparados para implantação em clusters Kubernetes (como K3s, MicroK8s ou ambientes de produção):
+
+| Manifesto | Recurso Kubernetes | Descrição |
+| :--- | :--- | :--- |
+| [`configmap.yaml`](file:///c:/Users/Admin/Documentos/TV-DLOG/projeto-tv/k8s/configmap.yaml) | `ConfigMap` (`tvdlog-config`) | Armazena variáveis de ambiente não sensíveis (diretórios de uploads, URLs externas de APIs, nível de log e portas do frontend/backend). |
+| [`secret.yaml`](file:///c:/Users/Admin/Documentos/TV-DLOG/projeto-tv/k8s/secret.yaml) | `Secret` (`tvdlog-secret`) | Guarda credenciais do PostgreSQL, chaves de assinatura JWT e credenciais de integração OAuth. |
+| [`persistentvolumeclaim.yaml`](file:///c:/Users/Admin/Documentos/TV-DLOG/projeto-tv/k8s/persistentvolumeclaim.yaml) | `PersistentVolumeClaim` | Provisiona volumes de armazenamento persistente via `storageClassName: local-path`:<br>• `tvdlog-uploads-pvc` (10Gi para arquivos de mídia)<br>• `tvdlog-postgres-pvc` (5Gi para dados do banco) |
+| [`deployment.yaml`](file:///c:/Users/Admin/Documentos/TV-DLOG/projeto-tv/k8s/deployment.yaml) | `Deployment` | Define a implantação dos containers:<br>• `tvdlog-bd` (PostgreSQL 15 com *health checks* `pg_isready`)<br>• `tvdlog-backend` (API FastAPI com *liveness/readiness probes* via HTTP GET `/docs`)<br>• `tvdlog-frontend` (SPA React com *probes* via TCP) |
+| [`service.yaml`](file:///c:/Users/Admin/Documentos/TV-DLOG/projeto-tv/k8s/service.yaml) | `Service` | Expõe as aplicações na rede:<br>• `tvdlog-bd-service` (`ClusterIP` interno na porta 5432)<br>• `tvdlog-backend-service` (`LoadBalancer` expondo a API na porta 8200)<br>• `tvdlog-frontend-service` (`LoadBalancer` expondo a Web na porta 3100) |
+
+---
+
+## 🚀 Guias de Implantação e Execução
+
+### 1. Implantação via Kubernetes (K3s / Cluster)
+
+Para implantar a aplicação em um cluster Kubernetes funcional (ex: K3s):
+
+1. **Garantir acesso ao cluster e contexto configurado**:
    ```bash
-   git clone <repository-url>
-   cd projeto-tv
+   kubectl cluster-info
    ```
 
-2. **Inicio dos serviços**
-   
-   Primeiro, inicie a rede e o banco de dados (que rodará continuamente):
+2. **Aplicar os manifestos da aplicação**:
+   ```bash
+   kubectl apply -f k8s/
+   ```
+
+3. **Verificar o status dos recursos implantados**:
+   ```bash
+   kubectl get pods,services,pvc -l app.kubernetes.io/name=tvdlog
+   ```
+
+4. **Acessar a aplicação**:
+   - **Frontend (Web TV / Admin)**: `http://<IP-DO-NODE>:3100`
+   - **Backend (Documentação Swagger)**: `http://<IP-DO-NODE>:8200/docs`
+
+---
+
+### 2. Implantação via Docker Compose
+
+Para rápida inicialização em ambiente isolado utilizando Docker Compose:
+
+1. **Inicializar o banco de dados PostgreSQL**:
    ```bash
    docker compose -f docker/docker-compose.db.yml up -d
    ```
 
-   Em seguida, inicie o backend e o frontend:
+2. **Construir e iniciar os serviços de Backend e Frontend**:
    ```bash
    docker compose up -d --build
    ```
 
+3. **Verificar os containers em execução**:
+   ```bash
+   docker compose ps
+   ```
 
-3. **Acesso a aplicação**
-   - **Frontend**: http://localhost:3100
-   - **Painel de administração**: http://localhost:3100/admin
-   - **Backend API**: http://localhost:8000/docs (Swagger UI)
-   - **Backend**: http://localhost:8000
+---
 
-4. **Usuário e senha do painel de ADMIN**
-   - Username: `admin`
-   - Password: `admin123`
+### 3. Execução em Ambiente de Desenvolvimento Local
 
-## 📁 Estrutura do Projeto
-
-```text
-projeto-tv/
-├── backend/                      # FastAPI backend application
-│   ├── app/
-│   │   ├── main.py              # Application entry point and configuration
-│   │   ├── auth.py              # JWT authentication and password hashing
-│   │   ├── database.py          # PostgreSQL session setup & DB init logic
-│   │   ├── models/              # SQLAlchemy Database Models
-│   │   │   ├── user.py
-│   │   │   ├── media.py
-│   │   │   └── settings.py
-│   │   ├── schemas/             # Pydantic validation schemas (DTOs)
-│   │   │   ├── user.py
-│   │   │   ├── media.py
-│   │   │   └── settings.py
-│   │   ├── repositories/        # Data Access Layer (Concrete & Contracts)
-│   │   │   ├── base.py
-│   │   │   ├── user_repository.py
-│   │   │   ├── media_repository.py
-│   │   │   └── settings_repository.py
-│   │   ├── services/            # Business Logic Layer (Concrete & Contracts)
-│   │   │   ├── user_service.py
-│   │   │   ├── media_service.py
-│   │   │   ├── settings_service.py
-│   │   │   └── external_service.py
-│   │   ├── core/                # Global utilities and dependencies injection
-│   │   │   ├── dependencies.py
-│   │   │   └── websocket.py
-│   │   └── routers/             # API Controllers (FastAPI Routes)
-│   │       ├── admin.py
-│   │       ├── media.py
-│   │       ├── news.py
-│   │       └── settings.py
-│   ├── Dockerfile               # Docker image for backend
-│   └── requirements.txt         # Python dependencies
-│
-├── frontend/                     # React frontend application
-│   ├── src/
-│   │   ├── pages/
-│   │   │   ├── TVDisplay.jsx    # Main TV display carousel component
-│   │   │   ├── AdminDashboard.jsx # Admin control panel
-│   │   │   └── Login.jsx        # Login page
-│   │   ├── App.jsx              # Main application component
-│   │   ├── main.jsx             # React entry point
-│   │   └── index.css            # Global styles
-│   ├── Dockerfile               # Docker image for frontend
-│   ├── package.json             # Node.js dependencies
-│   └── vite.config.js           # Vite configuration
-│
-├── docker-compose.yml           # Container orchestration configuration
-├── uploads/                     # Persistent storage for uploaded media (created at runtime)
-└── README.md                    # This file
-```
-
-### Para desenvolvedores
-
-#### Executando localmente (sem Docker)
-
-**Backend Setup:**
+#### Configuração do Backend (Python / FastAPI)
 ```bash
-# Navigate to backend directory
+# Navegar até o diretório backend
 cd backend
 
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+# Criar e ativar o ambiente virtual
+python -m venv .venv
+source .venv/bin/activate  # No Windows: .venv\Scripts\Activate.ps1
 
-# Install dependencies
+# Instalar as dependências
 pip install -r requirements.txt
 
-# Set environment variables
-export DATABASE_URL=postgresql://tvdlog:tvdlog123@localhost:5432/tv_dlog_db
-export SECRET_KEY=your-secret-key
-
-# Run the server
+# Configurar variáveis de ambiente e iniciar a API
+export DATABASE_URL=postgresql://tvdlog:tvdlog123@localhost:5432/tvdlog
 uvicorn app.main:app --reload --port 8000
 ```
 
-**Frontend Setup:**
+#### Configuração do Frontend (Node.js / React)
 ```bash
-# Navigate to frontend directory
+# Navegar até o diretório frontend
 cd frontend
 
-# Install dependencies
+# Instalar dependências e iniciar o servidor de desenvolvimento
 npm install
-
-# Set environment variables
-export VITE_API_URL=http://localhost:8000
-
-# Run development server
 npm run dev
 ```
 
-**Database Setup:**
-```bash
-# Install and run PostgreSQL locally, or use Docker:
-docker run -d --name postgres-db \
-  -e POSTGRES_USER=tvdlog \
-  -e POSTGRES_PASSWORD=tvdlog123 \
-  -e POSTGRES_DB=tv_dlog_db \
-  -p 5432:5432 \
-  postgres:15
+---
+
+## 📁 Estrutura do Repositório
+
+```text
+projeto-tv/
+├── backend/                      # Aplicação Backend FastAPI
+│   ├── app/
+│   │   ├── main.py              # Ponto de entrada e configuração do FastAPI
+│   │   ├── auth.py              # Autenticação JWT e hash de senhas
+│   │   ├── database.py          # Conexão e inicialização do PostgreSQL
+│   │   ├── models/              # Modelos de dados SQLAlchemy
+│   │   ├── schemas/             # Schemas de validação Pydantic (DTOs)
+│   │   ├── repositories/        # Camada de Acesso a Dados (Repositories)
+│   │   ├── services/            # Camada de Regras de Negócio (Services)
+│   │   ├── core/                # Injeção de dependências e WebSockets
+│   │   └── routers/             # Controladores de rotas REST (API)
+│   ├── Dockerfile               # Imagem Docker do backend
+│   └── requirements.txt         # Dependências Python
+│
+├── frontend/                     # Aplicação Frontend React (SPA)
+│   ├── src/
+│   │   ├── pages/               # Páginas (TVDisplay, AdminDashboard, Login)
+│   │   ├── components/          # Componentes reutilizáveis do painel
+│   │   ├── App.jsx              # Roteamento e proteção de rotas
+│   │   └── index.css            # Estilos globais e sintaxe Tailwind
+│   ├── Dockerfile               # Imagem Docker do frontend
+│   └── vite.config.js           # Configuração do Vite
+│
+├── k8s/                          # Manifestos de Implantação Kubernetes
+│   ├── configmap.yaml           # Configurações não sensíveis de ambiente
+│   ├── secret.yaml              # Credenciais e segredos de autenticação
+│   ├── persistentvolumeclaim.yaml # Provisionamento de volumes (Uploads e DB)
+│   ├── deployment.yaml          # Deployments do Postgres, Backend e Frontend
+│   └── service.yaml             # Serviços de rede (LoadBalancer e ClusterIP)
+│
+├── docker/                       # Scripts auxiliares e composições adicionais
+│   ├── db-backup.bat / .sh      # Scripts de backup do banco de dados
+│   ├── db-restore.bat / .sh     # Scripts de restauração de dump SQL
+│   └── docker-compose.db.yml    # Composição exclusiva para banco local
+│
+├── docker-compose.yml           # Orquestração de desenvolvimento com Docker
+├── uploads/                     # Armazenamento local de mídias enviadas
+├── GEMINI.md                    # Guia de arquitetura e contexto para agentes IA
+└── README.md                    # Documentação principal do projeto
 ```
 
+---
 
-## 💾 Backup, Restauração e Agendamento Automático
+## 💾 Procedimentos de Backup e Restauração
 
-Para evitar perda de dados em caso de queda de energia ou remoção acidental de volumes do Docker, o projeto conta com um sistema de backups integrados.
+O repositório possui utilitários automatizados localizados na pasta `docker/` para garantir a integridade dos dados:
 
-### 1. Como fazer backup manualmente
-Para salvar o estado atual do banco (tabelas, configurações e cadastros de mídias), execute na pasta `docker/` do projeto:
-* **No Windows:**
-  Execute duas vezes ou execute no prompt o arquivo `docker/db-backup.bat`.
-* **No Linux/macOS:**
-  ```bash
-  cd docker
-  chmod +x db-backup.sh
-  ./db-backup.sh
-  ```
-Isso gerará o arquivo `db_backup.sql` dentro da pasta `docker/`.
+- **Backup Manual**:
+  - *Windows*: Executar o arquivo `docker/db-backup.bat`.
+  - *Linux/macOS*: Executar `./docker/db-backup.sh`.
+  - *Resultado*: Gera o dump SQL em `docker/db_backup.sql`.
 
-### 2. Como restaurar um backup
-Para carregar o estado salvo no arquivo `docker/db_backup.sql` (útil após queda de energia ou inicialização limpa):
-* **No Windows:**
-  Execute o arquivo `docker/db-restore.bat` (será solicitado um `pause` no final para confirmar o sucesso).
-* **No Linux/macOS:**
-  ```bash
-  cd docker
-  chmod +x db-restore.sh
-  ./db-restore.sh
-  ```
-*Nota: Este comando recriará o esquema `public` do Postgres e aplicará todas as criações de tabelas e inserções gravadas no dump.*
+- **Restauração de Backup**:
+  - *Windows*: Executar `docker/db-restore.bat`.
+  - *Linux/macOS*: Executar `./docker/db-restore.sh`.
 
-### 3. Agendamento Automático a cada 7 dias (Windows)
-Para garantir que o banco esteja sempre sendo atualizado com novas mídias e modificações, você pode agendar o backup automático:
-1. Abra um prompt de comando (CMD ou PowerShell) **como Administrador**.
-2. Navegue até a pasta `docker/` do projeto:
-   ```cmd
-   cd docker
-   ```
-3. Execute o script de agendamento:
-   ```cmd
-   schedule-backup.bat
-   ```
-4. Pronto! O Agendador de Tarefas do Windows criará uma tarefa chamada `TV-DLOG-Backup-Semanal` para rodar o backup silenciosamente todo domingo às 03:00 da manhã.
-
-
-
-## 🚀 Melhorias Futuras
-
-- **Templates**: Layouts e temas pré-definidos para diferentes casos de uso.
-- **Analytics**: Acompanhe as visualizações de mídia e o engajamento do usuário.
-- **Multi-Display**: Suporte para gerenciar várias telas de TV a partir de um único painel de administração.
-- **Calendar Integration**: Exibir eventos do calendário junto com a mídia
+- **Agendamento Automático (Windows Task Scheduler)**:
+  - Executar `docker/schedule-backup.bat` como Administrador para configurar rotina semanal de backup.
 
 ---
+
+## 🔑 Credenciais Padrão e Acessos
+
+| Recurso | URL / Acesso | Credenciais |
+| :--- | :--- | :--- |
+| **Interface da TV** | `http://localhost:3100` (ou IP K8s:3100) | Acesso Público |
+| **Painel de Administração** | `http://localhost:3100/admin` | Usuário: `admin` \| Senha: `admin123` |
+| **Documentação da API (Swagger)** | `http://localhost:8000/docs` (ou IP K8s:8200/docs) | N/A |

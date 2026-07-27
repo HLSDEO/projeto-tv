@@ -4,7 +4,7 @@ import mediaService from '../services/mediaService';
 import settingsService from '../services/settingsService';
 import newsService from '../services/newsService';
 
-function VideoSlide({ src, isActive, duration, onEnded }) {
+function VideoSlide({ src, poster, isActive, isPreload, duration, onEnded }) {
   const videoRef = useRef(null);
 
   useEffect(() => {
@@ -28,6 +28,8 @@ function VideoSlide({ src, isActive, duration, onEnded }) {
     <video
       ref={videoRef}
       src={src}
+      poster={poster}
+      preload={isActive || isPreload ? "auto" : "none"}
       className="w-full h-full object-cover"
       muted
       playsInline
@@ -36,6 +38,7 @@ function VideoSlide({ src, isActive, duration, onEnded }) {
     />
   );
 }
+
 
 export default function TVDisplay() {
   const [media, setMedia] = useState([]);
@@ -65,6 +68,15 @@ export default function TVDisplay() {
       setMedia(activeMedia);
       setSettings(settingsData);
       setNews(newsData.news);
+
+      // Notify Service Worker of active media URLs for selective cache cleanup
+      if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+        const activePaths = activeMedia.flatMap(m => [m.url, m.thumbnail_url, m.compressed_url].filter(Boolean));
+        navigator.serviceWorker.controller.postMessage({
+          type: 'CLEAN_UNUSED_CACHE',
+          activePaths
+        });
+      }
 
       if (settingsData.weather_enabled) {
         try {
@@ -288,43 +300,59 @@ export default function TVDisplay() {
       
       {/* Media Layer */}
       <div className="absolute inset-0 z-0">
-        {media.map((m, idx) => (
-          <div
-            key={m.id}
-            className={`absolute inset-0 transition-opacity duration-1000 ${
-              idx === currentIndex ? 'opacity-100 z-10' : 'opacity-0 z-0'
-            }`}
-          >
-            {m.type === 'video' ? (
-              <VideoSlide 
-                src={getAssetUrl(m.url)}
-                isActive={idx === currentIndex}
-                duration={m.duration}
-                onEnded={() => {
-                  if (m.duration === 0) {
-                    setCurrentIndex((prev) => (prev + 1) % media.length);
-                  }
-                }}
-              />
-            ) : (
-              <div className="w-full h-full relative overflow-hidden flex items-center justify-center">
-                {/* Blurred ambient background image */}
-                <img 
+        {media.map((m, idx) => {
+          const total = media.length;
+          const isCurrent = idx === currentIndex;
+          const isNext = total > 1 && idx === (currentIndex + 1) % total;
+          const isPrev = total > 2 && idx === (currentIndex - 1 + total) % total;
+          const shouldRender = total <= 3 || isCurrent || isNext || isPrev;
+
+          if (!shouldRender) return null;
+
+          const displayUrl = m.compressed_url || m.url;
+          const blurBgUrl = m.thumbnail_url || displayUrl;
+
+          return (
+            <div
+              key={m.id}
+              className={`absolute inset-0 transition-opacity duration-1000 ${
+                isCurrent ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
+              }`}
+            >
+              {m.type === 'video' ? (
+                <VideoSlide 
                   src={getAssetUrl(m.url)}
-                  className="absolute inset-0 w-full h-full object-cover blur-3xl scale-110 opacity-40 select-none pointer-events-none"
-                  alt=""
+                  poster={m.thumbnail_url ? getAssetUrl(m.thumbnail_url) : undefined}
+                  isActive={isCurrent}
+                  isPreload={isNext}
+                  duration={m.duration}
+                  onEnded={() => {
+                    if (m.duration === 0) {
+                      setCurrentIndex((prev) => (prev + 1) % media.length);
+                    }
+                  }}
                 />
-                {/* Clean, fully-visible foreground image */}
-                <img 
-                  src={getAssetUrl(m.url)}
-                  className="relative z-10 w-full h-full object-contain"
-                  alt={m.original_name}
-                />
-              </div>
-            )}
-          </div>
-        ))}
+              ) : (
+                <div className="w-full h-full relative overflow-hidden flex items-center justify-center">
+                  {/* Blurred ambient background image (uses lightweight thumbnail) */}
+                  <img 
+                    src={getAssetUrl(blurBgUrl)}
+                    className="absolute inset-0 w-full h-full object-cover blur-3xl scale-110 opacity-40 select-none pointer-events-none"
+                    alt=""
+                  />
+                  {/* Clean, fully-visible foreground image */}
+                  <img 
+                    src={getAssetUrl(displayUrl)}
+                    className="relative z-10 w-full h-full object-contain"
+                    alt={m.original_name}
+                  />
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
+
 
       {/* Overlay Layer */}
       <div className="absolute inset-0 z-20 pointer-events-none">

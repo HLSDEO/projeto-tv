@@ -16,6 +16,8 @@ class Media(Base, AuditMixin):
     uploaded_at = Column(DateTime, default=datetime.utcnow)
     scheduled_start = Column(DateTime, nullable=True)
     url = Column(String(500), nullable=False)
+    thumbnail_url = Column(String(500), nullable=True)
+    compressed_url = Column(String(500), nullable=True)
 
     __table_args__ = (
         Index("ix_media_active_order", "active", "order"),
