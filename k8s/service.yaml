@@ -42,8 +42,8 @@ spec:
 
 ---
 # ------------------------------------------------------------------------------
-# 3. SERVIÇO DO FRONTEND (LoadBalancer no K3s ServiceLB - Expõe a Web na porta 3100)
-# Permite acesso direto pela intranet em http://10.61.140.21:3100/ sem restrição de porta NodePort.
+# 3. SERVIÇO DO FRONTEND (LoadBalancer no K3s ServiceLB - Expõe a Web na porta 3200)
+# Permite acesso direto pela intranet em http://<IP>:3200/ sem restrição de porta NodePort.
 # ------------------------------------------------------------------------------
 apiVersion: v1
 kind: Service
@@ -56,7 +56,7 @@ metadata:
 spec:
   type: LoadBalancer
   ports:
-    - port: 3100
+    - port: 3200
       targetPort: 3100
       name: http-web
   selector:

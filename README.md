@@ -59,7 +59,7 @@ A aplicação conta com um conjunto completo de manifestos Kubernetes localizado
 | [`secret.yaml`](file:///c:/Users/Admin/Documentos/TV-DLOG/projeto-tv/k8s/secret.yaml) | `Secret` (`tvdlog-secret`) | Guarda credenciais do PostgreSQL, chaves de assinatura JWT e credenciais de integração OAuth. |
 | [`persistentvolumeclaim.yaml`](file:///c:/Users/Admin/Documentos/TV-DLOG/projeto-tv/k8s/persistentvolumeclaim.yaml) | `PersistentVolumeClaim` | Provisiona volumes de armazenamento persistente via `storageClassName: local-path`:<br>• `tvdlog-uploads-pvc` (10Gi para arquivos de mídia)<br>• `tvdlog-postgres-pvc` (5Gi para dados do banco) |
 | [`deployment.yaml`](file:///c:/Users/Admin/Documentos/TV-DLOG/projeto-tv/k8s/deployment.yaml) | `Deployment` | Define a implantação dos containers:<br>• `tvdlog-bd` (PostgreSQL 15 com *health checks* `pg_isready`)<br>• `tvdlog-backend` (API FastAPI com *liveness/readiness probes* via HTTP GET `/docs`)<br>• `tvdlog-frontend` (SPA React com *probes* via TCP) |
-| [`service.yaml`](file:///c:/Users/Admin/Documentos/TV-DLOG/projeto-tv/k8s/service.yaml) | `Service` | Expõe as aplicações na rede:<br>• `tvdlog-bd-service` (`ClusterIP` interno na porta 5432)<br>• `tvdlog-backend-service` (`LoadBalancer` expondo a API na porta 8200)<br>• `tvdlog-frontend-service` (`LoadBalancer` expondo a Web na porta 3100) |
+| [`service.yaml`](file:///c:/Users/Admin/Documentos/TV-DLOG/projeto-tv/k8s/service.yaml) | `Service` | Expõe as aplicações na rede:<br>• `tvdlog-bd-service` (`ClusterIP` interno na porta 5432)<br>• `tvdlog-backend-service` (`LoadBalancer` expondo a API na porta 8200)<br>• `tvdlog-frontend-service` (`LoadBalancer` expondo a Web na porta 3200) |
 
 ---
 
@@ -85,7 +85,7 @@ Para implantar a aplicação em um cluster Kubernetes funcional (ex: K3s):
    ```
 
 4. **Acessar a aplicação**:
-   - **Frontend (Web TV / Admin)**: `http://<IP-DO-NODE>:3100`
+   - **Frontend (Web TV / Admin)**: `http://<IP-DO-NODE>:3200`
    - **Backend (Documentação Swagger)**: `http://<IP-DO-NODE>:8200/docs`
 
 ---
@@ -211,6 +211,6 @@ O repositório possui utilitários automatizados localizados na pasta `docker/` 
 
 | Recurso | URL / Acesso | Credenciais |
 | :--- | :--- | :--- |
-| **Interface da TV** | `http://localhost:3100` (ou IP K8s:3100) | Acesso Público |
-| **Painel de Administração** | `http://localhost:3100/admin` | Usuário: `admin` \| Senha: `admin123` |
+| **Interface da TV** | `http://localhost:3100` (ou IP K8s:3200) | Acesso Público |
+| **Painel de Administração** | `http://localhost:3100/admin` (ou IP K8s:3200/admin) | Usuário: `admin` \| Senha: `admin123` |
 | **Documentação da API (Swagger)** | `http://localhost:8000/docs` (ou IP K8s:8200/docs) | N/A |
