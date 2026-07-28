@@ -152,8 +152,6 @@ spec:
         - name: frontend
           image: projeto-tv-frontend:latest
           imagePullPolicy: IfNotPresent
-          command: ["/bin/sh", "-c"]
-          args: ["export BACKEND_HOST='tvdlog-backend-service.default.svc.cluster.local:8200' && rm -f .env* && npm run dev -- --host 0.0.0.0 --port 3100"]
           ports:
             - containerPort: 3100
               name: http
