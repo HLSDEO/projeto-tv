@@ -85,8 +85,8 @@ spec:
     spec:
       containers:
         - name: backend
-          image: projeto-tv-backend:latest
-          imagePullPolicy: IfNotPresent
+          image: ghcr.io/hlsdeo/projeto-tv-backend:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8000
               name: http
@@ -150,8 +150,8 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: projeto-tv-frontend:latest
-          imagePullPolicy: IfNotPresent
+          image: ghcr.io/hlsdeo/projeto-tv-frontend:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 3100
               name: http

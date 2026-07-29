@@ -60,6 +60,7 @@ A aplicação conta com um conjunto completo de manifestos Kubernetes localizado
 | [`persistentvolumeclaim.yaml`](file:///c:/Users/Admin/Documentos/TV-DLOG/projeto-tv/k8s/persistentvolumeclaim.yaml) | `PersistentVolumeClaim` | Provisiona volumes de armazenamento persistente via `storageClassName: local-path`:<br>• `tvdlog-uploads-pvc` (10Gi para arquivos de mídia)<br>• `tvdlog-postgres-pvc` (5Gi para dados do banco) |
 | [`deployment.yaml`](file:///c:/Users/Admin/Documentos/TV-DLOG/projeto-tv/k8s/deployment.yaml) | `Deployment` | Define a implantação dos containers:<br>• `tvdlog-bd` (PostgreSQL 15 com *health checks* `pg_isready`)<br>• `tvdlog-backend` (API FastAPI com *liveness/readiness probes* via HTTP GET `/docs`)<br>• `tvdlog-frontend` (SPA React com *probes* via TCP) |
 | [`service.yaml`](file:///c:/Users/Admin/Documentos/TV-DLOG/projeto-tv/k8s/service.yaml) | `Service` | Expõe as aplicações na rede:<br>• `tvdlog-bd-service` (`ClusterIP` interno na porta 5432)<br>• `tvdlog-backend-service` (`LoadBalancer` expondo a API na porta 8200)<br>• `tvdlog-frontend-service` (`LoadBalancer` expondo a Web na porta 3200) |
+| [`argocd-app.yaml`](file:///c:/Users/Admin/Documentos/TV-DLOG/projeto-tv/k8s/argocd-app.yaml) | `Application` (ArgoCD) | Configura o GitOps para sincronização automática do cluster com o repositório GitHub (`HLSDEO/projeto-tv`). |
 
 ---
 
@@ -87,6 +88,29 @@ Para implantar a aplicação em um cluster Kubernetes funcional (ex: K3s):
 4. **Acessar a aplicação**:
    - **Frontend (Web TV / Admin)**: `http://<IP-DO-NODE>:3200`
    - **Backend (Documentação Swagger)**: `http://<IP-DO-NODE>:8200/docs`
+
+---
+
+### ⚡ Automação de Entrega Contínua (GitOps com ArgoCD)
+
+Para habilitar a entrega contínua (CD) onde todo `git push` atualiza o cluster automaticamente:
+
+1. **Instalar o ArgoCD no cluster K3s**:
+   ```bash
+   kubectl create namespace argocd
+   kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+   ```
+
+2. **Aplicar a Aplicação GitOps do TV-DLOG**:
+   ```bash
+   kubectl apply -f k8s/argocd-app.yaml
+   ```
+
+3. **Obter a Senha de Acesso ao Painel do ArgoCD**:
+   ```bash
+   kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d; echo
+   ```
+   - O painel estará acessível para monitorar o status do cluster em tempo real. Qualquer alteração nos manifestos ou publicação de nova imagem no GitHub Container Registry (`ghcr.io`) será sincronizada automaticamente pelo ArgoCD sem nenhum comando manual no servidor.
 
 ---
 
