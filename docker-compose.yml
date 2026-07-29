@@ -40,6 +40,7 @@ services:
     environment:
       - VITE_API_URL=${VITE_API_URL}
       - DOCKER_ENV=true
+      - BACKEND_HOST=backend:8000
     networks:
       - tvdlog-network
     volumes:
