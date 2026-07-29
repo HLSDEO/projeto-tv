@@ -18,5 +18,6 @@ data:
   OAUTH_TOKEN_URL: "https://appslite.pf.gov.br/projetosuds/oauth/token"
   POSTGRES_DB: "tvdlog"
   VITE_API_URL: ""
+  VITE_BACKEND_HOST: "tvdlog-backend-service:8200"
   BACKEND_HOST: "tvdlog-backend-service:8200"
   DOCKER_ENV: "true"
