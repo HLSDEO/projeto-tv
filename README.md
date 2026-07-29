@@ -1,6 +1,6 @@
 # TV DLOG - Sistema de Sinalização Digital (Digital Signage)
 
-O **TV DLOG** é uma solução corporativa robusta de Sinalização Digital (*Digital Signage*) desenvolvida para gerenciamento e exibição contínua de conteúdos multimídia em telas e televisores. O sistema combina uma arquitetura moderna baseada em microserviços/containers, painel de controle administrativo intuitivo, sincronização via WebSockets em tempo real e integração com serviços de previsão do tempo e feeds de notícias.
+O **TV DLOG** é uma solução corporativa de Sinalização Digital (_Digital Signage_) desenvolvida para gerenciamento e exibição contínua de conteúdos multimídia em telas e televisores. O sistema combina uma arquitetura moderna baseada em microserviços/containers, painel de controle administrativo intuitivo, sincronização via WebSockets em tempo real e integração com serviços de previsão do tempo e feeds de notícias.
 
 ---
 
@@ -21,7 +21,7 @@ O **TV DLOG** é uma solução corporativa robusta de Sinalização Digital (*Di
 
 ## ✨ Visão Geral e Funcionalidades
 
-- **📺 Carrossel de Mídias Inteligente**: Suporte à reprodução contínua de imagens e vídeos com suporte a duração configurável e controle automático de término (*onEnded*).
+- **📺 Carrossel de Mídias Inteligente**: Suporte à reprodução contínua de imagens e vídeos com suporte a duração configurável e controle automático de término (_onEnded_).
 - **🎛️ Painel Administrativo Centralizado**: Gerenciamento de playlists, upload de arquivos, reordenação de conteúdos e alteração de parâmetros do sistema.
 - **⚡ Sincronização em Tempo Real (WebSockets)**: Atualização instantânea dos displays de TV assim que alterações são efetuadas no painel de administração, sem necessidade de recarregar a página.
 - **📰 Letreiro de Notícias Dinâmico (RSS Feed)**: Exibição de manchetes atualizadas em tempo real via integração com feed RSS.
@@ -33,17 +33,20 @@ O **TV DLOG** é uma solução corporativa robusta de Sinalização Digital (*Di
 ## 🏗️ Arquitetura e Tecnologias
 
 ### Backend
+
 - **FastAPI**: Framework assíncrono de alto desempenho em Python.
 - **PostgreSQL 15**: Banco de dados relacional para persistência de dados.
 - **SQLAlchemy & Pydantic**: ORM e validação de contratos de dados (DTOs).
 - **WebSockets & Uvicorn**: Comunicação bidirecional em tempo real e servidor ASGI.
 
 ### Frontend
+
 - **React 19 & Vite**: Interface de usuário reativa de alta performance.
 - **Tailwind CSS**: Estilização moderna e responsiva.
 - **Axios & React Router**: Consumo de API REST e roteamento de páginas.
 
 ### Infraestrutura e Orquestração
+
 - **Kubernetes (K3s / Standard K8s)**: Manifestos YAML estruturados para alta disponibilidade e persistência.
 - **Docker & Docker Compose**: Containerização e orquestração para ambientes locais e de desenvolvimento.
 
@@ -53,14 +56,14 @@ O **TV DLOG** é uma solução corporativa robusta de Sinalização Digital (*Di
 
 A aplicação conta com um conjunto completo de manifestos Kubernetes localizados no diretório [`k8s/`](file:///c:/Users/Admin/Documentos/TV-DLOG/projeto-tv/k8s), preparados para implantação em clusters Kubernetes (como K3s, MicroK8s ou ambientes de produção):
 
-| Manifesto | Recurso Kubernetes | Descrição |
-| :--- | :--- | :--- |
-| [`configmap.yaml`](file:///c:/Users/Admin/Documentos/TV-DLOG/projeto-tv/k8s/configmap.yaml) | `ConfigMap` (`tvdlog-config`) | Armazena variáveis de ambiente não sensíveis (diretórios de uploads, URLs externas de APIs, nível de log e portas do frontend/backend). |
-| [`secret.yaml`](file:///c:/Users/Admin/Documentos/TV-DLOG/projeto-tv/k8s/secret.yaml) | `Secret` (`tvdlog-secret`) | Guarda credenciais do PostgreSQL, chaves de assinatura JWT e credenciais de integração OAuth. |
-| [`persistentvolumeclaim.yaml`](file:///c:/Users/Admin/Documentos/TV-DLOG/projeto-tv/k8s/persistentvolumeclaim.yaml) | `PersistentVolumeClaim` | Provisiona volumes de armazenamento persistente via `storageClassName: local-path`:<br>• `tvdlog-uploads-pvc` (10Gi para arquivos de mídia)<br>• `tvdlog-postgres-pvc` (5Gi para dados do banco) |
-| [`deployment.yaml`](file:///c:/Users/Admin/Documentos/TV-DLOG/projeto-tv/k8s/deployment.yaml) | `Deployment` | Define a implantação dos containers:<br>• `tvdlog-bd` (PostgreSQL 15 com *health checks* `pg_isready`)<br>• `tvdlog-backend` (API FastAPI com *liveness/readiness probes* via HTTP GET `/docs`)<br>• `tvdlog-frontend` (SPA React com *probes* via TCP) |
-| [`service.yaml`](file:///c:/Users/Admin/Documentos/TV-DLOG/projeto-tv/k8s/service.yaml) | `Service` | Expõe as aplicações na rede:<br>• `tvdlog-bd-service` (`ClusterIP` interno na porta 5432)<br>• `tvdlog-backend-service` (`LoadBalancer` expondo a API na porta 8200)<br>• `tvdlog-frontend-service` (`LoadBalancer` expondo a Web na porta 3200) |
-| [`argocd-app.yaml`](file:///c:/Users/Admin/Documentos/TV-DLOG/projeto-tv/k8s/argocd-app.yaml) | `Application` (ArgoCD) | Configura o GitOps para sincronização automática do cluster com o repositório GitHub (`HLSDEO/projeto-tv`). |
+| Manifesto                                                                                                           | Recurso Kubernetes            | Descrição                                                                                                                                                                                                                                               |
+| :------------------------------------------------------------------------------------------------------------------ | :---------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [`configmap.yaml`](file:///c:/Users/Admin/Documentos/TV-DLOG/projeto-tv/k8s/configmap.yaml)                         | `ConfigMap` (`tvdlog-config`) | Armazena variáveis de ambiente não sensíveis (diretórios de uploads, URLs externas de APIs, nível de log e portas do frontend/backend).                                                                                                                 |
+| [`secret.yaml`](file:///c:/Users/Admin/Documentos/TV-DLOG/projeto-tv/k8s/secret.yaml)                               | `Secret` (`tvdlog-secret`)    | Guarda credenciais do PostgreSQL, chaves de assinatura JWT e credenciais de integração OAuth.                                                                                                                                                           |
+| [`persistentvolumeclaim.yaml`](file:///c:/Users/Admin/Documentos/TV-DLOG/projeto-tv/k8s/persistentvolumeclaim.yaml) | `PersistentVolumeClaim`       | Provisiona volumes de armazenamento persistente via `storageClassName: local-path`:<br>• `tvdlog-uploads-pvc` (10Gi para arquivos de mídia)<br>• `tvdlog-postgres-pvc` (5Gi para dados do banco)                                                        |
+| [`deployment.yaml`](file:///c:/Users/Admin/Documentos/TV-DLOG/projeto-tv/k8s/deployment.yaml)                       | `Deployment`                  | Define a implantação dos containers:<br>• `tvdlog-bd` (PostgreSQL 15 com _health checks_ `pg_isready`)<br>• `tvdlog-backend` (API FastAPI com _liveness/readiness probes_ via HTTP GET `/docs`)<br>• `tvdlog-frontend` (SPA React com _probes_ via TCP) |
+| [`service.yaml`](file:///c:/Users/Admin/Documentos/TV-DLOG/projeto-tv/k8s/service.yaml)                             | `Service`                     | Expõe as aplicações na rede:<br>• `tvdlog-bd-service` (`ClusterIP` interno na porta 5432)<br>• `tvdlog-backend-service` (`LoadBalancer` expondo a API na porta 8200)<br>• `tvdlog-frontend-service` (`LoadBalancer` expondo a Web na porta 3200)        |
+| [`argocd-app.yaml`](file:///c:/Users/Admin/Documentos/TV-DLOG/projeto-tv/k8s/argocd-app.yaml)                       | `Application` (ArgoCD)        | Configura o GitOps para sincronização automática do cluster com o repositório GitHub (`HLSDEO/projeto-tv`).                                                                                                                                             |
 
 ---
 
@@ -71,16 +74,19 @@ A aplicação conta com um conjunto completo de manifestos Kubernetes localizado
 Para implantar a aplicação em um cluster Kubernetes funcional (ex: K3s):
 
 1. **Garantir acesso ao cluster e contexto configurado**:
+
    ```bash
    kubectl cluster-info
    ```
 
 2. **Aplicar os manifestos da aplicação**:
+
    ```bash
    kubectl apply -f k8s/
    ```
 
 3. **Verificar o status dos recursos implantados**:
+
    ```bash
    kubectl get pods,services,pvc -l app.kubernetes.io/name=tvdlog
    ```
@@ -96,12 +102,14 @@ Para implantar a aplicação em um cluster Kubernetes funcional (ex: K3s):
 Para habilitar a entrega contínua (CD) onde todo `git push` atualiza o cluster automaticamente:
 
 1. **Instalar o ArgoCD no cluster K3s**:
+
    ```bash
    kubectl create namespace argocd
    kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
    ```
 
 2. **Aplicar a Aplicação GitOps do TV-DLOG**:
+
    ```bash
    kubectl apply -f k8s/argocd-app.yaml
    ```
@@ -110,6 +118,7 @@ Para habilitar a entrega contínua (CD) onde todo `git push` atualiza o cluster 
    ```bash
    kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d; echo
    ```
+
    - O painel estará acessível para monitorar o status do cluster em tempo real. Qualquer alteração nos manifestos ou publicação de nova imagem no GitHub Container Registry (`ghcr.io`) será sincronizada automaticamente pelo ArgoCD sem nenhum comando manual no servidor.
 
 ---
@@ -119,11 +128,13 @@ Para habilitar a entrega contínua (CD) onde todo `git push` atualiza o cluster 
 Para rápida inicialização em ambiente isolado utilizando Docker Compose:
 
 1. **Inicializar o banco de dados PostgreSQL**:
+
    ```bash
    docker compose -f docker/docker-compose.db.yml up -d
    ```
 
 2. **Construir e iniciar os serviços de Backend e Frontend**:
+
    ```bash
    docker compose up -d --build
    ```
@@ -138,6 +149,7 @@ Para rápida inicialização em ambiente isolado utilizando Docker Compose:
 ### 3. Execução em Ambiente de Desenvolvimento Local
 
 #### Configuração do Backend (Python / FastAPI)
+
 ```bash
 # Navegar até o diretório backend
 cd backend
@@ -155,6 +167,7 @@ uvicorn app.main:app --reload --port 8000
 ```
 
 #### Configuração do Frontend (Node.js / React)
+
 ```bash
 # Navegar até o diretório frontend
 cd frontend
@@ -218,13 +231,13 @@ projeto-tv/
 O repositório possui utilitários automatizados localizados na pasta `docker/` para garantir a integridade dos dados:
 
 - **Backup Manual**:
-  - *Windows*: Executar o arquivo `docker/db-backup.bat`.
-  - *Linux/macOS*: Executar `./docker/db-backup.sh`.
-  - *Resultado*: Gera o dump SQL em `docker/db_backup.sql`.
+  - _Windows_: Executar o arquivo `docker/db-backup.bat`.
+  - _Linux/macOS_: Executar `./docker/db-backup.sh`.
+  - _Resultado_: Gera o dump SQL em `docker/db_backup.sql`.
 
 - **Restauração de Backup**:
-  - *Windows*: Executar `docker/db-restore.bat`.
-  - *Linux/macOS*: Executar `./docker/db-restore.sh`.
+  - _Windows_: Executar `docker/db-restore.bat`.
+  - _Linux/macOS_: Executar `./docker/db-restore.sh`.
 
 - **Agendamento Automático (Windows Task Scheduler)**:
   - Executar `docker/schedule-backup.bat` como Administrador para configurar rotina semanal de backup.
@@ -233,8 +246,8 @@ O repositório possui utilitários automatizados localizados na pasta `docker/` 
 
 ## 🔑 Credenciais Padrão e Acessos
 
-| Recurso | URL / Acesso | Credenciais |
-| :--- | :--- | :--- |
-| **Interface da TV** | `http://localhost:3100` (ou IP K8s:3200) | Acesso Público |
-| **Painel de Administração** | `http://localhost:3100/admin` (ou IP K8s:3200/admin) | Usuário: `admin` \| Senha: `admin123` |
-| **Documentação da API (Swagger)** | `http://localhost:8000/docs` (ou IP K8s:8200/docs) | N/A |
+| Recurso                           | URL / Acesso                                         | Credenciais                           |
+| :-------------------------------- | :--------------------------------------------------- | :------------------------------------ |
+| **Interface da TV**               | `http://localhost:3100` (ou IP K8s:3200)             | Acesso Público                        |
+| **Painel de Administração**       | `http://localhost:3100/admin` (ou IP K8s:3200/admin) | Usuário: `admin` \| Senha: `admin123` |
+| **Documentação da API (Swagger)** | `http://localhost:8000/docs` (ou IP K8s:8200/docs)   | N/A                                   |
