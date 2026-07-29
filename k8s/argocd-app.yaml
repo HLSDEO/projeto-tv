@@ -1,0 +1,26 @@
+# ------------------------------------------------------------------------------
+# ARGOCD GITOPS APPLICATION MANIFEST
+# Monitora o repositório GitHub e aplica alterações na pasta k8s/ automaticamente
+# ------------------------------------------------------------------------------
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: tvdlog-app
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: 'https://github.com/HLSDEO/projeto-tv.git'
+    targetRevision: main
+    path: k8s
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
